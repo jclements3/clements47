@@ -1,0 +1,154 @@
+# FreeCAD macro - Erard Concert Harp Stringband
+# Grommets on smoothing spline k=5 s=0.5, pins float. Units in inches.
+import FreeCAD, Part, Sketcher, math
+
+doc = FreeCAD.newDocument('ErardHarp')
+sketch = doc.addObject('Sketcher::SketchObject', 'HarpStringband')
+
+# Strings (47) - geometry indices 0-46
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(10.0, -59.6486, 0), FreeCAD.Vector(10.0, -0.0056, 0)))  # String 1
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(10.706, -58.6226, 0), FreeCAD.Vector(10.706, 0.0264, 0)))  # String 2
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(11.412, -57.6990, 0), FreeCAD.Vector(11.412, -0.0440, 0)))  # String 3
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(12.119, -56.6390, 0), FreeCAD.Vector(12.119, 0.0220, 0)))  # String 4
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(12.825, -55.4580, 0), FreeCAD.Vector(12.825, 0.0100, 0)))  # String 5
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(13.531, -54.2660, 0), FreeCAD.Vector(13.531, 0.0090, 0)))  # String 6
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(14.237, -53.1225, 0), FreeCAD.Vector(14.237, -0.0405, 0)))  # String 7
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(14.943, -51.8946, 0), FreeCAD.Vector(14.943, -0.0056, 0)))  # String 8
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(15.65, -50.3820, 0), FreeCAD.Vector(15.65, 0.1150, 0)))  # String 9
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(16.356, -49.0559, 0), FreeCAD.Vector(16.356, -0.1489, 0)))  # String 10
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(17.062, -48.1801, 0), FreeCAD.Vector(17.062, -0.0681, 0)))  # String 11
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(17.768, -46.3282, 0), FreeCAD.Vector(17.768, 0.3918, 0)))  # String 12
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(18.454, -44.0118, 0), FreeCAD.Vector(18.454, -0.2738, 0)))  # String 13
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(19.14, -41.5922, 0), FreeCAD.Vector(19.14, -0.0412, 0)))  # String 14
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(19.826, -39.0399, 0), FreeCAD.Vector(19.826, -0.0729, 0)))  # String 15
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(20.512, -36.3672, 0), FreeCAD.Vector(20.512, 0.0148, 0)))  # String 16
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(21.158, -33.7892, 0), FreeCAD.Vector(21.158, 0.2068, 0)))  # String 17
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(21.804, -31.2177, 0), FreeCAD.Vector(21.804, -0.0047, 0)))  # String 18
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(22.449, -28.7241, 0), FreeCAD.Vector(22.449, 0.1029, 0)))  # String 19
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(23.055, -26.4986, 0), FreeCAD.Vector(23.055, -0.2556, 0)))  # String 20
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(23.66, -24.4191, 0), FreeCAD.Vector(23.66, 0.0349, 0)))  # String 21
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(24.265, -22.4939, 0), FreeCAD.Vector(24.265, -0.0289, 0)))  # String 22
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(24.871, -20.7197, 0), FreeCAD.Vector(24.871, -0.0437, 0)))  # String 23
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(25.476, -19.0939, 0), FreeCAD.Vector(25.476, -0.0079, 0)))  # String 24
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(26.081, -17.6013, 0), FreeCAD.Vector(26.081, 0.0927, 0)))  # String 25
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(26.686, -16.2291, 0), FreeCAD.Vector(26.686, 0.0729, 0)))  # String 26
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(27.251, -15.0457, 0), FreeCAD.Vector(27.251, 0.0633, 0)))  # String 27
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(27.816, -13.9474, 0), FreeCAD.Vector(27.816, -0.0304, 0)))  # String 28
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(28.381, -12.9256, 0), FreeCAD.Vector(28.381, -0.0026, 0)))  # String 29
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(28.946, -11.9721, 0), FreeCAD.Vector(28.946, -0.0431, 0)))  # String 30
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(29.511, -11.0796, 0), FreeCAD.Vector(29.511, -0.1456, 0)))  # String 31
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(30.076, -10.2416, 0), FreeCAD.Vector(30.076, 0.0964, 0)))  # String 32
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(30.641, -9.4524, 0), FreeCAD.Vector(30.641, -0.1084, 0)))  # String 33
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(31.166, -8.7587, 0), FreeCAD.Vector(31.166, -0.0107, 0)))  # String 34
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(31.69, -8.1013, 0), FreeCAD.Vector(31.69, 0.0497, 0)))  # String 35
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(32.215, -7.4755, 0), FreeCAD.Vector(32.215, 0.0795, 0)))  # String 36
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(32.74, -6.8812, 0), FreeCAD.Vector(32.74, 0.0768, 0)))  # String 37
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(33.264, -6.3188, 0), FreeCAD.Vector(33.264, 0.0432, 0)))  # String 38
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(33.789, -5.7862, 0), FreeCAD.Vector(33.789, -0.0212, 0)))  # String 39
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(34.313, -5.2852, 0), FreeCAD.Vector(34.313, -0.1162, 0)))  # String 40
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(34.838, -4.8131, 0), FreeCAD.Vector(34.838, -0.0421, 0)))  # String 41
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(35.363, -4.3694, 0), FreeCAD.Vector(35.363, 0.0046, 0)))  # String 42
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(35.887, -3.9517, 0), FreeCAD.Vector(35.887, 0.0243, 0)))  # String 43
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(36.412, -3.5536, 0), FreeCAD.Vector(36.412, 0.0254, 0)))  # String 44
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(36.936, -3.1692, 0), FreeCAD.Vector(36.936, 0.0118, 0)))  # String 45
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(37.461, -2.7869, 0), FreeCAD.Vector(37.461, -0.0039, 0)))  # String 46
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(37.986, -2.3942, 0), FreeCAD.Vector(37.986, -0.0082, 0)))  # String 47
+
+# Key segments (47) - geometry indices 47-93
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(10.0, -0.0056, 0), FreeCAD.Vector(10.3119, 1.4617, 0)))  # Key 1
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(10.706, 0.0264, 0), FreeCAD.Vector(11.0179, 1.4937, 0)))  # Key 2
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(11.412, -0.0440, 0), FreeCAD.Vector(11.7239, 1.4232, 0)))  # Key 3
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(12.119, 0.0220, 0), FreeCAD.Vector(12.4309, 1.4893, 0)))  # Key 4
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(12.825, 0.0100, 0), FreeCAD.Vector(13.1369, 1.4772, 0)))  # Key 5
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(13.531, 0.0090, 0), FreeCAD.Vector(13.8429, 1.4762, 0)))  # Key 6
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(14.237, -0.0405, 0), FreeCAD.Vector(14.5489, 1.4267, 0)))  # Key 7
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(14.943, -0.0056, 0), FreeCAD.Vector(15.2549, 1.4616, 0)))  # Key 8
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(15.65, 0.1150, 0), FreeCAD.Vector(15.9619, 1.5822, 0)))  # Key 9
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(16.356, -0.1489, 0), FreeCAD.Vector(16.6679, 1.3183, 0)))  # Key 10
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(17.062, -0.0681, 0), FreeCAD.Vector(17.3739, 1.3991, 0)))  # Key 11
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(17.768, 0.3918, 0), FreeCAD.Vector(18.0799, 1.8591, 0)))  # Key 12
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(18.454, -0.2738, 0), FreeCAD.Vector(18.7659, 1.1934, 0)))  # Key 13
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(19.14, -0.0412, 0), FreeCAD.Vector(19.4519, 1.4260, 0)))  # Key 14
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(19.826, -0.0729, 0), FreeCAD.Vector(20.1379, 1.3943, 0)))  # Key 15
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(20.512, 0.0148, 0), FreeCAD.Vector(20.8239, 1.4820, 0)))  # Key 16
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(21.158, 0.2068, 0), FreeCAD.Vector(21.4699, 1.6740, 0)))  # Key 17
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(21.804, -0.0047, 0), FreeCAD.Vector(22.1159, 1.4625, 0)))  # Key 18
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(22.449, 0.1029, 0), FreeCAD.Vector(22.7609, 1.5701, 0)))  # Key 19
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(23.055, -0.2556, 0), FreeCAD.Vector(23.3669, 1.2117, 0)))  # Key 20
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(23.66, 0.0349, 0), FreeCAD.Vector(23.9719, 1.5021, 0)))  # Key 21
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(24.265, -0.0289, 0), FreeCAD.Vector(24.5769, 1.4383, 0)))  # Key 22
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(24.871, -0.0437, 0), FreeCAD.Vector(25.1829, 1.4235, 0)))  # Key 23
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(25.476, -0.0079, 0), FreeCAD.Vector(25.7879, 1.4593, 0)))  # Key 24
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(26.081, 0.0927, 0), FreeCAD.Vector(26.3929, 1.5599, 0)))  # Key 25
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(26.686, 0.0729, 0), FreeCAD.Vector(26.9979, 1.5401, 0)))  # Key 26
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(27.251, 0.0633, 0), FreeCAD.Vector(27.5629, 1.5305, 0)))  # Key 27
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(27.816, -0.0304, 0), FreeCAD.Vector(28.1279, 1.4368, 0)))  # Key 28
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(28.381, -0.0026, 0), FreeCAD.Vector(28.6929, 1.4646, 0)))  # Key 29
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(28.946, -0.0431, 0), FreeCAD.Vector(29.2579, 1.4241, 0)))  # Key 30
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(29.511, -0.1456, 0), FreeCAD.Vector(29.8229, 1.3216, 0)))  # Key 31
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(30.076, 0.0964, 0), FreeCAD.Vector(30.3879, 1.5636, 0)))  # Key 32
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(30.641, -0.1084, 0), FreeCAD.Vector(30.9529, 1.3588, 0)))  # Key 33
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(31.166, -0.0107, 0), FreeCAD.Vector(31.4779, 1.4565, 0)))  # Key 34
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(31.69, 0.0497, 0), FreeCAD.Vector(32.0019, 1.5169, 0)))  # Key 35
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(32.215, 0.0795, 0), FreeCAD.Vector(32.5269, 1.5467, 0)))  # Key 36
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(32.74, 0.0768, 0), FreeCAD.Vector(33.0519, 1.5441, 0)))  # Key 37
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(33.264, 0.0432, 0), FreeCAD.Vector(33.5759, 1.5104, 0)))  # Key 38
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(33.789, -0.0212, 0), FreeCAD.Vector(34.1009, 1.4460, 0)))  # Key 39
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(34.313, -0.1162, 0), FreeCAD.Vector(34.6249, 1.3510, 0)))  # Key 40
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(34.838, -0.0421, 0), FreeCAD.Vector(35.1499, 1.4251, 0)))  # Key 41
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(35.363, 0.0046, 0), FreeCAD.Vector(35.6749, 1.4718, 0)))  # Key 42
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(35.887, 0.0243, 0), FreeCAD.Vector(36.1989, 1.4915, 0)))  # Key 43
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(36.412, 0.0254, 0), FreeCAD.Vector(36.7239, 1.4927, 0)))  # Key 44
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(36.936, 0.0118, 0), FreeCAD.Vector(37.2479, 1.4791, 0)))  # Key 45
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(37.461, -0.0039, 0), FreeCAD.Vector(37.7729, 1.4633, 0)))  # Key 46
+sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(37.986, -0.0082, 0), FreeCAD.Vector(38.2979, 1.4590, 0)))  # Key 47
+
+# Vertical constraints on strings
+for i in range(47):
+    sketch.addConstraint(Sketcher.Constraint('Vertical', i))
+
+# Horizontal spacing between adjacent strings
+spacings = [0.706, 0.706, 0.707, 0.706, 0.706, 0.706, 0.706, 0.707, 0.706, 0.706, 0.706, 0.686, 0.686, 0.686, 0.686, 0.646, 0.646, 0.645, 0.606, 0.605, 0.605, 0.606, 0.605, 0.605, 0.605, 0.565, 0.565, 0.565, 0.565, 0.565, 0.565, 0.565, 0.525, 0.524, 0.525, 0.525, 0.524, 0.525, 0.524, 0.525, 0.525, 0.524, 0.525, 0.524, 0.525, 0.525]
+for i in range(46):
+    sketch.addConstraint(Sketcher.Constraint('DistanceX', i, 1, i+1, 1, spacings[i]))
+
+# String length constraints
+string_lengths = [59.6430, 58.6490, 57.6550, 56.6610, 55.4680, 54.2750, 53.0820, 51.8890, 50.4970, 48.9070, 48.1120, 46.7200, 43.7380, 41.5510, 38.9670, 36.3820, 33.9960, 31.2130, 28.8270, 26.2430, 24.4540, 22.4650, 20.6760, 19.0860, 17.6940, 16.3020, 15.1090, 13.9170, 12.9230, 11.9290, 10.9340, 10.3380, 9.3440, 8.7480, 8.1510, 7.5550, 6.9580, 6.3620, 5.7650, 5.1690, 4.7710, 4.3740, 3.9760, 3.5790, 3.1810, 2.7830, 2.3860]
+for i in range(47):
+    sketch.addConstraint(Sketcher.Constraint('Distance', i, string_lengths[i]))
+
+# Grommet Y positions (smoothing spline k=5 s=0.5)
+grommet_y = [-59.6486, -58.6226, -57.6990, -56.6390, -55.4580, -54.2660, -53.1225, -51.8946, -50.3820, -49.0559, -48.1801, -46.3282, -44.0118, -41.5922, -39.0399, -36.3672, -33.7892, -31.2177, -28.7241, -26.4986, -24.4191, -22.4939, -20.7197, -19.0939, -17.6013, -16.2291, -15.0457, -13.9474, -12.9256, -11.9721, -11.0796, -10.2416, -9.4524, -8.7587, -8.1013, -7.4755, -6.8812, -6.3188, -5.7862, -5.2852, -4.8131, -4.3694, -3.9517, -3.5536, -3.1692, -2.7869, -2.3942]
+for i in range(47):
+    sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, i, 1, grommet_y[i]))
+
+# Key constraints: coincident to pin, length=1.5, angle=78 deg
+for i in range(47):
+    sketch.addConstraint(Sketcher.Constraint('Coincident', i + 47, 1, i, 2))
+    sketch.addConstraint(Sketcher.Constraint('Distance', i + 47, 1.5))
+    sketch.addConstraint(Sketcher.Constraint('Angle', i + 47, math.radians(78.0)))
+
+# Fix string 1 grommet X to origin
+sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 0, 1, 0.0))
+
+# Soundboard curve: smoothing spline k=5 s=0.5 (Part shape, outside sketch)
+import numpy as np
+from scipy.interpolate import UnivariateSpline
+x_pts = np.array([10.0, 10.706, 11.412, 12.119, 12.825, 13.531, 14.237, 14.943, 15.65, 16.356, 17.062, 17.768, 18.454, 19.14, 19.826, 20.512, 21.158, 21.804, 22.449, 23.055, 23.66, 24.265, 24.871, 25.476, 26.081, 26.686, 27.251, 27.816, 28.381, 28.946, 29.511, 30.076, 30.641, 31.166, 31.69, 32.215, 32.74, 33.264, 33.789, 34.313, 34.838, 35.363, 35.887, 36.412, 36.936, 37.461, 37.986])
+y_pts = np.array(grommet_y)
+spl = UnivariateSpline(x_pts, y_pts, k=5, s=0.5)
+xs = np.linspace(10.0, 37.986, 100)
+pts = [FreeCAD.Vector(float(xi), float(spl(xi)), 0) for xi in xs]
+curve = Part.BSplineCurve()
+curve.interpolate(pts)
+soundboard = doc.addObject('Part::Feature', 'Soundboard')
+soundboard.Shape = curve.toShape()
+
+doc.recompute()
+doc.saveAs('/home/clementsj/projects/clements47/erard_harp.FCStd')
+print('Saved erard_harp.FCStd')
+try:
+    FreeCAD.Gui.activeDocument().activeView().fitAll()
+except Exception:
+    pass
+print('Done')
