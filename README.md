@@ -120,6 +120,8 @@ Where `polar_dir` is the unit vector from origin to cusp (so `-polar_dir` points
 
 ## Stringband Data
 
+Source: [harpcanada.com/harpmaking/erard.htm](https://harpcanada.com/harpmaking/erard.htm)
+
 ### Note Map (47 strings, highest to lowest)
 
 | Str# | Note | Octave | Material | Color | Spacing Group |
@@ -131,65 +133,67 @@ Where `polar_dir` is the unit vector from origin to cusp (so `-polar_dir` points
 | 5 | C | 1st | Nylon | **red** | 0.706" |
 | 6 | B | 1st | Nylon | white | 0.706" |
 | 7 | A | 1st | Nylon | white | 0.706" |
-| 8 | G | 1st | Gut | white | 0.706" |
-| 9 | F | 1st | Gut | blue | 0.706" |
-| 10 | E | 2nd | Gut | white | 0.706" |
-| 11 | D | 2nd | Gut | white | 0.706" |
-| 12 | C | 2nd | Gut | **red** | 0.686" |
-| 13 | B | 2nd | Gut | white | 0.686" |
-| 14 | A | 2nd | Gut | white | 0.686" |
-| 15 | G | 2nd | Gut | white | 0.686" |
-| 16 | F | 2nd | Gut | blue | 0.646" |
-| 17 | E | 3rd | Gut | white | 0.646" |
-| 18 | D | 3rd | Gut | white | 0.646" |
-| 19 | C | 3rd | Gut | **red** | 0.606" |
-| 20 | B | 3rd | Gut | white | 0.606" |
-| 21 | A | 3rd | Gut | white | 0.606" |
-| 22 | G | 3rd | Gut | white | 0.606" |
-| 23 | F | 3rd | Gut | blue | 0.606" |
-| 24 | E | 4th | Gut | white | 0.565" |
-| 25 | D | 4th | Gut | white | 0.565" |
-| 26 | C | 4th | Gut | **red** | 0.565" |
-| 27 | B | 4th | Gut | white | 0.565" |
-| 28 | A | 4th | Gut | white | 0.565" |
-| 29 | G | 4th | Gut | white | 0.565" |
-| 30 | F | 4th | Gut | blue | 0.565" |
-| 31 | E | 5th | Gut | white | 0.565" |
-| 32 | D | 5th | Gut | white | 0.565" |
-| 33 | C | 5th | Gut | **red** | 0.565" |
-| 34 | B | 5th | Wire | white | 0.525" |
-| 35 | A | 5th | Wire | white | 0.525" |
-| 36 | G | 5th | Wire | white | 0.525" |
-| 37 | F | 5th | Wire | blue | 0.525" |
-| 38 | E | 6th | Wire | white | 0.525" |
-| 39 | D | 6th | Wire | white | 0.525" |
-| 40 | C | 6th | Wire | **red** | 0.525" |
-| 41 | B | 6th | Wire | white | 0.525" |
-| 42 | A | 6th | Wire | white | 0.525" |
-| 43 | G | 6th | Wire | white | 0.525" |
-| 44 | F | 6th | Wire | blue | 0.525" |
-| 45 | E | 7th | Wire | white | 0.525" |
-| 46 | D | 7th | Wire | white | 0.525" |
-| 47 | C | 7th | Wire | **red** | — |
+| 8 | G | 1st | Nylon | white | 0.706" |
+| 9 | F | 1st | Nylon | blue | 0.706" |
+| 10 | E | 2nd | Nylon | white | 0.706" |
+| 11 | D | 2nd | Nylon | white | 0.706" |
+| 12 | C | 2nd | Nylon | **red** | 0.686" |
+| 13 | B | 2nd | Nylon | white | 0.686" |
+| 14 | A | 2nd | Nylon | white | 0.686" |
+| 15 | G | 2nd | Nylon | white | 0.686" |
+| 16 | F | 2nd | Nylon | blue | 0.646" |
+| 17 | E | 3rd | Nylon | white | 0.646" |
+| 18 | D | 3rd | Nylon | white | 0.646" |
+| 19 | C | 3rd | Nylon | **red** | 0.606" |
+| 20 | B | 3rd | Nylon | white | 0.606" |
+| 21 | A | 3rd | Nylon | white | 0.606" |
+| 22 | G | 3rd | Nylon | white | 0.606" |
+| 23 | F | 3rd | Nylon | blue | 0.606" |
+| 24 | E | 4th | Nylon | white | 0.565" |
+| 25 | D | 4th | Nylon | white | 0.565" |
+| 26 | C | 4th | Nylon | **red** | 0.565" |
+| 27 | B | 4th | Nylon | white | 0.565" |
+| 28 | A | 4th | Nylon+wrap | white | 0.565" |
+| 29 | G | 4th | Nylon+wrap | white | 0.565" |
+| 30 | F | 4th | Nylon+wrap | blue | 0.565" |
+| 31 | E | 5th | Nylon+wrap | white | 0.565" |
+| 32 | D | 5th | Nylon+wrap | white | 0.565" |
+| 33 | C | 5th | Nylon+wrap | **red** | 0.565" |
+| 34 | B | 5th | Nylon+wrap | white | 0.525" |
+| 35 | A | 5th | Nylon+wrap | white | 0.525" |
+| 36 | G | 5th | Nylon+wrap | white | 0.525" |
+| 37 | F | 5th | Nylon+wrap | blue | 0.525" |
+| 38 | E | 6th | Nylon+wrap | white | 0.525" |
+| 39 | D | 6th | Steel/Bronze | white | 0.525" |
+| 40 | C | 6th | Steel/Bronze | **red** | 0.525" |
+| 41 | B | 6th | Steel/Bronze | white | 0.525" |
+| 42 | A | 6th | Steel/Bronze | white | 0.525" |
+| 43 | G | 6th | Steel/Bronze | white | 0.525" |
+| 44 | F | 6th | Steel/Bronze | blue | 0.525" |
+| 45 | E | 7th | Steel/Bronze | white | 0.525" |
+| 46 | D | 7th | Steel/Bronze | white | 0.525" |
+| 47 | C | 7th | Steel/Bronze | **red** | — |
 
-### String Materials
+### String Materials (Erard Specification)
 
-| Register | Strings | Material | Diameter Range |
-|----------|---------|----------|----------------|
-| Treble (0th-1st octave) | 1-7 | Nylon | 0.45 - 0.60 mm |
-| Mid (2nd-5th octave) | 8-33 | Natural gut | 0.60 - 2.05 mm |
-| Bass (5th-7th octave) | 34-47 | Steel wire | 1.42 - 1.82 mm |
+| Register | Strings | Construction | Core Dia | Outer Dia | Tension Range |
+|----------|---------|-------------|----------|-----------|---------------|
+| Treble | 1-7 | Plain nylon | 0.025" | 0.025" | 11-15 lbs |
+| Upper-mid | 8-14 | Plain nylon | 0.028-0.032" | 0.028-0.032" | 16-21 lbs |
+| Mid | 15-27 | Plain nylon | 0.036-0.050" | 0.036-0.050" | 20-29 lbs |
+| Lower-mid | 28-38 | Nylon core + nylon wrap | 0.045-0.060" | 0.061-0.104" | 33-49 lbs |
+| Bass | 39-47 | Steel core + bronze wrap | 0.020-0.026" | 0.046-0.091" | 49-53 lbs |
 
-Material transitions at strings 8 (nylon→gut) and 34 (gut→wire) correspond to pin spacing changes.
+Material transitions: string 28 (plain nylon → wound nylon), string 39 (nylon → steel/bronze).
 
-### String Tension
+### String Tension (Erard)
 
 | Property | Value |
 |----------|-------|
-| Total soundboard load | ~2,250 lbs (10 kN) |
-| Per-string (treble) | ~13 lbs (60 N) |
-| Per-string (mid gut) | ~31 lbs (140 N) |
-| Per-string (bass) | ~47 lbs (210 N) |
+| Total soundboard load | 1,466 lbs (665 kg) |
+| Per-string range | 11-53 lbs |
+| Mean per-string | 31.2 lbs |
+| Max tension jump | 6.5 lbs (strings 27→28) |
 
 ### Color Coding
 
@@ -201,17 +205,28 @@ Material transitions at strings 8 (nylon→gut) and 34 (gut→wire) correspond t
 
 | Material | Density (kg/m³) | Tensile Strength (psi) |
 |----------|----------------|----------------------|
-| Nylon | 1,067 | 44,600 |
-| Gut | 1,300 | 52,000 |
+| Nylon (Tynex) | 1,067 | 44,600 |
 | Steel music wire | 7,830 | 325,000 |
+| Bronze (phosphor) | 8,850 | 140,000 |
+
+### US String Sources
+
+| Strings | Source | Product | Est. Cost |
+|---------|--------|---------|-----------|
+| 1-27 (plain nylon) | [Dusty Strings](https://manufacturing.dustystrings.com/harps/strings) (Seattle) | Monofilament by diameter, .025"-.050" | ~$95 |
+| 28-38 (nylon wound) | [Musicmakers/HarpKit](https://www.harpkit.com/harp-strings) (Stillwater MN) | "NN" type — nylon core + nylon wrap | ~$185-350 |
+| 39-47 (steel/bronze) | [Musicmakers/HarpKit](https://www.harpkit.com/harp-strings) | "SFB" type — steel core + bronze wrap | Contact |
+| 39-47 (alternative) | [Vanderbilt Music](https://vanderbiltmusic.com/harp-strings/vanderbilt-bass-wires/) | Tarnish-resistant wires, $17.25/ea | ~$155 |
+| Historical option | [Aquila Corde](https://aquilacorde.com/en/early-music-strings/synthetic/empire-period-harp-bass-wound-strings-as-type/) (Italy) | Silk/Nylgut core, silvered copper | ~$28-32/ea |
+
+Estimated full set: **$435-600**
 
 ### References
 
-- [Harp Connection - 47 String Chart](https://www.harpconnection.com/PDF%20String%20Charts/String%20Chart%20Pedal%2047.pdf)
-- [Morley Harps - Bow Brand Gut Diameters](https://www.morleyharps.co.uk/Files/116004/Bow_Brand_Gut_Diameters.pdf)
-- [Sligo Harps - String Theory](http://www.sligoharps.com/string.html)
+- [HarpCanada - Erard Stringband](https://harpcanada.com/harpmaking/erard.htm) — original Erard string specifications
 - [HarpCanada - StringBand Manager](https://www.harpcanada.com/stringband.htm)
-- [Old Harps Made Young - String Tension](https://www.oldharpsmadeyoung.com/single-post/2014/09/26/string-and-string-tension)
+- [Harp Connection - 47 String Chart](https://www.harpconnection.com/PDF%20String%20Charts/String%20Chart%20Pedal%2047.pdf)
+- [Sligo Harps - String Theory](http://www.sligoharps.com/string.html)
 - [Metropolitan Museum - Erard String Gauge 1829](https://www.metmuseum.org/art/collection/search/504046)
 
 ## Running
