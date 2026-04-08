@@ -78,11 +78,11 @@ Where `polar_dir` is the unit vector from origin to cusp (so `-polar_dir` points
 
 | Property | Formula | Base (18" dia) | Neck (4" dia) |
 |----------|---------|----------------|---------------|
-| Diameter (max width) | 2(a + b) = 6b | 18" | 4" |
-| Depth (along polar axis) | 4b | 12" | 2.67" |
-| Bulge radius (theta=0) | a + b = 3b | 9" | 2" |
-| Cusp distance (theta=pi) | a - b = b | 3" | 0.667" |
-| Perpendicular width | 2a = 4b | 12" | 2.67" |
+| Diameter (max width) | 2(a + b) = 6b | 14" | 4" |
+| Depth (along polar axis) | 4b | 9.3" | 2.67" |
+| Bulge radius (theta=0) | a + b = 3b | 7" | 2" |
+| Cusp distance (theta=pi) | a - b = b | 2.33" | 0.667" |
+| Perpendicular width | 2a = 4b | 9.3" | 2.67" |
 | Aspect ratio (width:depth) | 6b : 4b | 3:2 | 3:2 |
 
 ### 5. Acoustic Analysis
@@ -91,9 +91,9 @@ Where `polar_dir` is the unit vector from origin to cusp (so `-polar_dir` points
 
 | Property | Clements47 | Lyon & Healy 23 | Salvi Aurora |
 |----------|-----------|-----------------|-------------|
-| Soundbox volume | **66 L** | ~35-40 L | ~35-40 L |
-| Helmholtz frequency | **69 Hz (C2)** | ~90-110 Hz | ~90-110 Hz |
-| Base width | 18" | ~14-16" | ~14-16" |
+| Soundbox volume | **43 L** | ~35-40 L | ~35-40 L |
+| Helmholtz frequency | **85 Hz (E2)** | ~90-110 Hz | ~90-110 Hz |
+| Base width | 14" | ~14-16" | ~14-16" |
 | Total tension | 1,466 lbs | ~1,800 lbs | ~1,700 lbs |
 | Cross-section | Limaçon (D-shape) | Round/Oval | Round/Oval |
 | String material | Nylon/Wire | Gut/Wire | Gut/Wire |
@@ -117,8 +117,8 @@ Where `polar_dir` is the unit vector from origin to cusp (so `-polar_dir` points
 #### Tonal Character
 
 - **Warmer and rounder** than modern gut-strung concert harps
-- **Stronger bass** due to ~66L volume (nearly 2x modern harps)
-- **Lower Helmholtz resonance** (69 Hz vs 90-110 Hz) supports lowest strings
+- **Enhanced bass** due to ~43L volume (1.2x modern harps)
+- **Lower Helmholtz resonance** (~85 Hz vs 90-110 Hz) supports lower strings
 - **D-shape projects directionally** — cusp acts as reflector toward player
 - **Lighter tension** (1,466 lbs) allows thinner, more responsive soundboard
 - Nylon strings: even decay across registers, less sustain than gut
@@ -152,7 +152,7 @@ Where `polar_dir` is the unit vector from origin to cusp (so `-polar_dir` points
 |-----------|-------|
 | Strings | 47 (C1 to G7) |
 | String lengths | 59.65" (C1) to 2.39" (G7) |
-| Base diameter | 18" |
+| Base diameter | 14" |
 | Neck diameter | 4" |
 | Limacon ratio | a = 2b |
 | Diameter taper | Linear |
