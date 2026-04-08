@@ -1,6 +1,6 @@
 # FreeCAD macro - Erard Harp Soundbox
 # Lofted limacon cross-sections along bezier soundboard curve
-# a=2b, diameter 18" (base) to 4" (neck)
+# a=2b, diameter 18" (base) to 4" (neck), evenly spaced by arc length
 import FreeCAD, Part, math
 
 doc = FreeCAD.newDocument('ErardHarp')
@@ -10,15 +10,15 @@ N_PTS = 60  # points per limacon
 # 70 limacon cross-sections
 sections = []
 
-# Section 1: origin=(7.0000,-65.6430), dia=18.00"
+# Section 1: (7.000,-65.634), dia=18.0"
 pts_0 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 6.000000 + 3.000000 * math.cos(theta)
+    r = 5.999999 + 2.999999 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 7.000000 + u * (-1.000000)
-    py = -65.643000 + u * (0.000000)
+    px = 7.000008 + u * (-0.999998)
+    py = -65.633706 + u * (0.001737)
     pz = v
     pts_0.append(FreeCAD.Vector(px, py, pz))
 bsp_0 = Part.BSplineCurve()
@@ -27,15 +27,15 @@ obj_0 = doc.addObject("Part::Feature", "Limacon_01")
 obj_0.Shape = bsp_0.toShape()
 sections.append(obj_0)
 
-# Section 2: origin=(7.2942,-63.8491), dia=17.88"
+# Section 2: (7.110,-64.552), dia=18.0"
 pts_1 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.958861 + 2.979430 * math.cos(theta)
+    r = 5.984610 + 2.992305 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 7.294191 + u * (-0.951648)
-    py = -63.849133 + u * (0.307190)
+    px = 7.110059 + u * (-0.980534)
+    py = -64.551723 + u * (0.196349)
     pz = v
     pts_1.append(FreeCAD.Vector(px, py, pz))
 bsp_1 = Part.BSplineCurve()
@@ -44,15 +44,15 @@ obj_1 = doc.addObject("Part::Feature", "Limacon_02")
 obj_1.Shape = bsp_1.toShape()
 sections.append(obj_1)
 
-# Section 3: origin=(8.0615,-62.1664), dia=17.55"
+# Section 3: (7.415,-63.505), dia=17.8"
 pts_2 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.851564 + 2.925782 * math.cos(theta)
+    r = 5.941920 + 2.970960 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 8.061488 + u * (-0.865762)
-    py = -62.166364 + u * (0.500456)
+    px = 7.415336 + u * (-0.934743)
+    py = -63.504620 + u * (0.355326)
     pz = v
     pts_2.append(FreeCAD.Vector(px, py, pz))
 bsp_2 = Part.BSplineCurve()
@@ -61,15 +61,15 @@ obj_2 = doc.addObject("Part::Feature", "Limacon_03")
 obj_2.Shape = bsp_2.toShape()
 sections.append(obj_2)
 
-# Section 4: origin=(9.1290,-60.5657), dia=17.11"
+# Section 4: (7.870,-62.512), dia=17.6"
 pts_3 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.702289 + 2.851144 * math.cos(theta)
+    r = 5.878387 + 2.939194 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 9.128975 + u * (-0.804174)
-    py = -60.565674 + u * (0.594394)
+    px = 7.869670 + u * (-0.883058)
+    py = -62.511966 + u * (0.469264)
     pz = v
     pts_3.append(FreeCAD.Vector(px, py, pz))
 bsp_3 = Part.BSplineCurve()
@@ -78,15 +78,15 @@ obj_3 = doc.addObject("Part::Feature", "Limacon_04")
 obj_3.Shape = bsp_3.toShape()
 sections.append(obj_3)
 
-# Section 5: origin=(10.3237,-59.0180), dia=16.61"
+# Section 5: (8.425,-61.574), dia=17.4"
 pts_4 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.535216 + 2.767608 * math.cos(theta)
+    r = 5.800668 + 2.900334 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 10.323735 + u * (-0.786815)
-    py = -59.018043 + u * (0.617188)
+    px = 8.425450 + u * (-0.838801)
+    py = -61.574130 + u * (0.544438)
     pz = v
     pts_4.append(FreeCAD.Vector(px, py, pz))
 bsp_4 = Part.BSplineCurve()
@@ -95,15 +95,15 @@ obj_4 = doc.addObject("Part::Feature", "Limacon_05")
 obj_4.Shape = bsp_4.toShape()
 sections.append(obj_4)
 
-# Section 6: origin=(11.4729,-57.4945), dia=16.12"
+# Section 6: (9.048,-60.676), dia=17.1"
 pts_5 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.374526 + 2.687263 * math.cos(theta)
+    r = 5.713598 + 2.856799 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 11.472854 + u * (-0.818273)
-    py = -57.494453 + u * (0.574830)
+    px = 9.048100 + u * (-0.807139)
+    py = -60.675658 + u * (0.590361)
     pz = v
     pts_5.append(FreeCAD.Vector(px, py, pz))
 bsp_5 = Part.BSplineCurve()
@@ -112,15 +112,15 @@ obj_5 = doc.addObject("Part::Feature", "Limacon_06")
 obj_5.Shape = bsp_5.toShape()
 sections.append(obj_5)
 
-# Section 7: origin=(11.9997,-56.7379), dia=15.90"
+# Section 7: (9.709,-59.803), dia=16.9"
 pts_6 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.300857 + 2.650429 * math.cos(theta)
+    r = 5.621147 + 2.810573 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 11.999670 + u * (-0.823226)
-    py = -56.737934 + u * (0.567713)
+    px = 9.709235 + u * (-0.789729)
+    py = -59.802506 + u * (0.613455)
     pz = v
     pts_6.append(FreeCAD.Vector(px, py, pz))
 bsp_6 = Part.BSplineCurve()
@@ -129,15 +129,15 @@ obj_6 = doc.addObject("Part::Feature", "Limacon_07")
 obj_6.Shape = bsp_6.toShape()
 sections.append(obj_6)
 
-# Section 8: origin=(12.5190,-55.9760), dia=15.68"
+# Section 8: (10.384,-58.942), dia=16.6"
 pts_7 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.228239 + 2.614120 * math.cos(theta)
+    r = 5.526829 + 2.763415 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 12.518972 + u * (-0.829625)
-    py = -55.976043 + u * (0.558321)
+    px = 10.383712 + u * (-0.787211)
+    py = -58.941534 + u * (0.616684)
     pz = v
     pts_7.append(FreeCAD.Vector(px, py, pz))
 bsp_7 = Part.BSplineCurve()
@@ -146,15 +146,15 @@ obj_7 = doc.addObject("Part::Feature", "Limacon_08")
 obj_7.Shape = bsp_7.toShape()
 sections.append(obj_7)
 
-# Section 9: origin=(13.0285,-55.2076), dia=15.47"
+# Section 9: (11.053,-58.072), dia=16.3"
 pts_8 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.156985 + 2.578492 * math.cos(theta)
+    r = 5.433298 + 2.716649 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 13.028523 + u * (-0.837397)
-    py = -55.207644 + u * (0.546594)
+    px = 11.052565 + u * (-0.800469)
+    py = -58.072431 + u * (0.599374)
     pz = v
     pts_8.append(FreeCAD.Vector(px, py, pz))
 bsp_8 = Part.BSplineCurve()
@@ -163,15 +163,15 @@ obj_8 = doc.addObject("Part::Feature", "Limacon_09")
 obj_8.Shape = bsp_8.toShape()
 sections.append(obj_8)
 
-# Section 10: origin=(13.5261,-54.4316), dia=15.26"
+# Section 10: (11.687,-57.189), dia=16.0"
 pts_9 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.087407 + 2.543703 * math.cos(theta)
+    r = 5.344584 + 2.672292 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 13.526085 + u * (-0.846451)
-    py = -54.431597 + u * (0.532467)
+    px = 11.686976 + u * (-0.820101)
+    py = -57.188637 + u * (0.572219)
     pz = v
     pts_9.append(FreeCAD.Vector(px, py, pz))
 bsp_9 = Part.BSplineCurve()
@@ -180,15 +180,15 @@ obj_9 = doc.addObject("Part::Feature", "Limacon_10")
 obj_9.Shape = bsp_9.toShape()
 sections.append(obj_9)
 
-# Section 11: origin=(14.0094,-53.6468), dia=15.06"
+# Section 11: (12.307,-56.289), dia=15.8"
 pts_10 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 5.019818 + 2.509909 * math.cos(theta)
+    r = 5.257865 + 2.628933 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 14.009423 + u * (-0.856670)
-    py = -53.646765 + u * (0.515865)
+    px = 12.307110 + u * (-0.826831)
+    py = -56.289141 + u * (0.562450)
     pz = v
     pts_10.append(FreeCAD.Vector(px, py, pz))
 bsp_10 = Part.BSplineCurve()
@@ -197,15 +197,15 @@ obj_10 = doc.addObject("Part::Feature", "Limacon_11")
 obj_10.Shape = bsp_10.toShape()
 sections.append(obj_10)
 
-# Section 12: origin=(14.4736,-52.8577), dia=14.86"
+# Section 12: (12.917,-55.377), dia=15.5"
 pts_11 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.954903 + 2.477451 * math.cos(theta)
+    r = 5.172528 + 2.586264 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 14.473640 + u * (-0.867048)
-    py = -52.857728 + u * (0.498225)
+    px = 12.917372 + u * (-0.835574)
+    py = -55.377308 + u * (0.549378)
     pz = v
     pts_11.append(FreeCAD.Vector(px, py, pz))
 bsp_11 = Part.BSplineCurve()
@@ -214,15 +214,15 @@ obj_11 = doc.addObject("Part::Feature", "Limacon_12")
 obj_11.Shape = bsp_11.toShape()
 sections.append(obj_11)
 
-# Section 13: origin=(14.9217,-52.0591), dia=14.68"
+# Section 13: (13.509,-54.459), dia=15.3"
 pts_12 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.892248 + 2.446124 * math.cos(theta)
+    r = 5.089810 + 2.544905 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 14.921689 + u * (-0.877149)
-    py = -52.059055 + u * (0.480218)
+    px = 13.508898 + u * (-0.846113)
+    py = -54.458900 + u * (0.533003)
     pz = v
     pts_12.append(FreeCAD.Vector(px, py, pz))
 bsp_12 = Part.BSplineCurve()
@@ -231,15 +231,15 @@ obj_12 = doc.addObject("Part::Feature", "Limacon_13")
 obj_12.Shape = bsp_12.toShape()
 sections.append(obj_12)
 
-# Section 14: origin=(15.3531,-51.2512), dia=14.50"
+# Section 14: (14.080,-53.529), dia=15.0"
 pts_13 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.831919 + 2.415959 * math.cos(theta)
+    r = 5.009939 + 2.504969 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 15.353116 + u * (-0.886970)
-    py = -51.251179 + u * (0.461826)
+    px = 14.080068 + u * (-0.858244)
+    py = -53.529041 + u * (0.513242)
     pz = v
     pts_13.append(FreeCAD.Vector(px, py, pz))
 bsp_13 = Part.BSplineCurve()
@@ -248,15 +248,15 @@ obj_13 = doc.addObject("Part::Feature", "Limacon_14")
 obj_13.Shape = bsp_13.toShape()
 sections.append(obj_13)
 
-# Section 15: origin=(15.7675,-50.4345), dia=14.32"
+# Section 15: (14.630,-52.583), dia=14.8"
 pts_14 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.773977 + 2.386989 * math.cos(theta)
+    r = 4.933028 + 2.466514 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 15.767464 + u * (-0.896507)
-    py = -50.434537 + u * (0.443030)
+    px = 14.630067 + u * (-0.870564)
+    py = -52.583253 + u * (0.492055)
     pz = v
     pts_14.append(FreeCAD.Vector(px, py, pz))
 bsp_14 = Part.BSplineCurve()
@@ -265,15 +265,15 @@ obj_14 = doc.addObject("Part::Feature", "Limacon_15")
 obj_14.Shape = bsp_14.toShape()
 sections.append(obj_14)
 
-# Section 16: origin=(16.1643,-49.6096), dia=14.16"
+# Section 16: (15.157,-51.624), dia=14.6"
 pts_15 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.718488 + 2.359244 * math.cos(theta)
+    r = 4.859378 + 2.429689 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 16.164279 + u * (-0.905750)
-    py = -49.609564 + u * (0.423812)
+    px = 15.156753 + u * (-0.882488)
+    py = -51.623917 + u * (0.470336)
     pz = v
     pts_15.append(FreeCAD.Vector(px, py, pz))
 bsp_15 = Part.BSplineCurve()
@@ -282,15 +282,15 @@ obj_15 = doc.addObject("Part::Feature", "Limacon_16")
 obj_15.Shape = bsp_15.toShape()
 sections.append(obj_15)
 
-# Section 17: origin=(16.5429,-48.7782), dia=14.00"
+# Section 17: (15.657,-50.656), dia=14.4"
 pts_16 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.665543 + 2.332772 * math.cos(theta)
+    r = 4.789383 + 2.394691 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 16.542890 + u * (-0.914211)
-    py = -48.778236 + u * (0.405239)
+    px = 15.657299 + u * (-0.893960)
+    py = -50.655870 + u * (0.448146)
     pz = v
     pts_16.append(FreeCAD.Vector(px, py, pz))
 bsp_16 = Part.BSplineCurve()
@@ -299,15 +299,15 @@ obj_16 = doc.addObject("Part::Feature", "Limacon_17")
 obj_16.Shape = bsp_16.toShape()
 sections.append(obj_16)
 
-# Section 18: origin=(16.9050,-47.9393), dia=13.84"
+# Section 18: (16.135,-49.672), dia=14.2"
 pts_17 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.614911 + 2.307455 * math.cos(theta)
+    r = 4.722563 + 2.361281 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 16.904971 + u * (-0.921899)
-    py = -47.939329 + u * (0.387430)
+    px = 16.135136 + u * (-0.905067)
+    py = -49.671716 + u * (0.425268)
     pz = v
     pts_17.append(FreeCAD.Vector(px, py, pz))
 bsp_17 = Part.BSplineCurve()
@@ -316,15 +316,15 @@ obj_17 = doc.addObject("Part::Feature", "Limacon_18")
 obj_17.Shape = bsp_17.toShape()
 sections.append(obj_17)
 
-# Section 19: origin=(17.2512,-47.0936), dia=13.70"
+# Section 19: (16.589,-48.674), dia=14.0"
 pts_18 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.566498 + 2.283249 * math.cos(theta)
+    r = 4.659090 + 2.329545 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 17.251181 + u * (-0.928872)
-    py = -47.093618 + u * (0.370400)
+    px = 16.589041 + u * (-0.915213)
+    py = -48.673771 + u * (0.402971)
     pz = v
     pts_18.append(FreeCAD.Vector(px, py, pz))
 bsp_18 = Part.BSplineCurve()
@@ -333,15 +333,15 @@ obj_18 = doc.addObject("Part::Feature", "Limacon_19")
 obj_18.Shape = bsp_18.toShape()
 sections.append(obj_18)
 
-# Section 20: origin=(17.5822,-46.2419), dia=13.56"
+# Section 20: (17.017,-47.669), dia=13.8"
 pts_19 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.520212 + 2.260106 * math.cos(theta)
+    r = 4.599181 + 2.299591 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 17.582175 + u * (-0.935184)
-    py = -46.241875 + u * (0.354161)
+    px = 17.017454 + u * (-0.924206)
+    py = -47.669405 + u * (0.381894)
     pz = v
     pts_19.append(FreeCAD.Vector(px, py, pz))
 bsp_19 = Part.BSplineCurve()
@@ -350,15 +350,15 @@ obj_19 = doc.addObject("Part::Feature", "Limacon_20")
 obj_19.Shape = bsp_19.toShape()
 sections.append(obj_19)
 
-# Section 21: origin=(17.8986,-45.3849), dia=13.43"
+# Section 21: (17.424,-46.656), dia=13.6"
 pts_20 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.475962 + 2.237981 * math.cos(theta)
+    r = 4.542401 + 2.271200 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 17.898612 + u * (-0.940886)
-    py = -45.384873 + u * (0.338723)
+    px = 17.423501 + u * (-0.932202)
+    py = -46.655675 + u * (0.361938)
     pz = v
     pts_20.append(FreeCAD.Vector(px, py, pz))
 bsp_20 = Part.BSplineCurve()
@@ -367,15 +367,15 @@ obj_20 = doc.addObject("Part::Feature", "Limacon_21")
 obj_20.Shape = bsp_20.toShape()
 sections.append(obj_20)
 
-# Section 22: origin=(18.2021,-44.5209), dia=13.30"
+# Section 22: (17.808,-45.634), dia=13.5"
 pts_21 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.433521 + 2.216761 * math.cos(theta)
+    r = 4.488590 + 2.244295 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 18.202112 + u * (-0.945952)
-    py = -44.520908 + u * (0.324308)
+    px = 17.808306 + u * (-0.939293)
+    py = -45.633899 + u * (0.343117)
     pz = v
     pts_21.append(FreeCAD.Vector(px, py, pz))
 bsp_21 = Part.BSplineCurve()
@@ -384,15 +384,15 @@ obj_21 = doc.addObject("Part::Feature", "Limacon_22")
 obj_21.Shape = bsp_21.toShape()
 sections.append(obj_21)
 
-# Section 23: origin=(18.4929,-43.6525), dia=13.18"
+# Section 23: (18.174,-44.603), dia=13.3"
 pts_22 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.392855 + 2.196427 * math.cos(theta)
+    r = 4.437475 + 2.218737 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 18.492924 + u * (-0.950429)
-    py = -43.652475 + u * (0.310940)
+    px = 18.173840 + u * (-0.945496)
+    py = -44.603186 + u * (0.325633)
     pz = v
     pts_22.append(FreeCAD.Vector(px, py, pz))
 bsp_22 = Part.BSplineCurve()
@@ -401,15 +401,15 @@ obj_22 = doc.addObject("Part::Feature", "Limacon_23")
 obj_22.Shape = bsp_22.toShape()
 sections.append(obj_22)
 
-# Section 24: origin=(18.7720,-42.7801), dia=13.06"
+# Section 24: (18.521,-43.565), dia=13.2"
 pts_23 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.353829 + 2.176915 * math.cos(theta)
+    r = 4.388881 + 2.194440 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 18.772001 + u * (-0.954368)
-    py = -42.780120 + u * (0.298633)
+    px = 18.521344 + u * (-0.950847)
+    py = -43.565407 + u * (0.309662)
     pz = v
     pts_23.append(FreeCAD.Vector(px, py, pz))
 bsp_23 = Part.BSplineCurve()
@@ -418,15 +418,15 @@ obj_23 = doc.addObject("Part::Feature", "Limacon_24")
 obj_23.Shape = bsp_23.toShape()
 sections.append(obj_23)
 
-# Section 25: origin=(19.0403,-41.9044), dia=12.95"
+# Section 25: (18.852,-42.522), dia=13.0"
 pts_24 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.316312 + 2.158156 * math.cos(theta)
+    r = 4.342611 + 2.171305 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 19.040295 + u * (-0.957811)
-    py = -41.904392 + u * (0.287398)
+    px = 18.852226 + u * (-0.955433)
+    py = -42.522106 + u * (0.295207)
     pz = v
     pts_24.append(FreeCAD.Vector(px, py, pz))
 bsp_24 = Part.BSplineCurve()
@@ -435,15 +435,15 @@ obj_24 = doc.addObject("Part::Feature", "Limacon_25")
 obj_24.Shape = bsp_24.toShape()
 sections.append(obj_24)
 
-# Section 26: origin=(19.2988,-41.0258), dia=12.84"
+# Section 26: (19.167,-41.479), dia=12.9"
 pts_25 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.280169 + 2.140084 * math.cos(theta)
+    r = 4.298619 + 2.149310 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 19.298758 + u * (-0.960800)
-    py = -41.025840 + u * (0.277243)
+    px = 19.166818 + u * (-0.959315)
+    py = -41.478613 + u * (0.282338)
     pz = v
     pts_25.append(FreeCAD.Vector(px, py, pz))
 bsp_25 = Part.BSplineCurve()
@@ -452,15 +452,15 @@ obj_25 = doc.addObject("Part::Feature", "Limacon_26")
 obj_25.Shape = bsp_25.toShape()
 sections.append(obj_25)
 
-# Section 27: origin=(19.5493,-40.1416), dia=12.74"
+# Section 27: (19.470,-40.425), dia=12.8"
 pts_26 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.245130 + 2.122565 * math.cos(theta)
+    r = 4.256217 + 2.128109 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 19.549325 + u * (-0.963364)
-    py = -40.141570 + u * (0.268197)
+    px = 19.470040 + u * (-0.962588)
+    py = -40.424793 + u * (0.270968)
     pz = v
     pts_26.append(FreeCAD.Vector(px, py, pz))
 bsp_26 = Part.BSplineCurve()
@@ -469,15 +469,15 @@ obj_26 = doc.addObject("Part::Feature", "Limacon_27")
 obj_26.Shape = bsp_26.toShape()
 sections.append(obj_26)
 
-# Section 28: origin=(19.7921,-39.2551), dia=12.63"
+# Section 28: (19.761,-39.370), dia=12.6"
 pts_27 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.211180 + 2.105590 * math.cos(theta)
+    r = 4.215537 + 2.107769 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 19.792108 + u * (-0.965531)
-    py = -39.255098 + u * (0.260289)
+    px = 19.760949 + u * (-0.965270)
+    py = -39.370452 + u * (0.261253)
     pz = v
     pts_27.append(FreeCAD.Vector(px, py, pz))
 bsp_27 = Part.BSplineCurve()
@@ -486,15 +486,15 @@ obj_27 = doc.addObject("Part::Feature", "Limacon_28")
 obj_27.Shape = bsp_27.toShape()
 sections.append(obj_27)
 
-# Section 29: origin=(20.0282,-38.3668), dia=12.53"
+# Section 29: (20.042,-38.313), dia=12.5"
 pts_28 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.178171 + 2.089086 * math.cos(theta)
+    r = 4.176217 + 2.088109 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 20.028158 + u * (-0.967328)
-    py = -38.366776 + u * (0.253528)
+    px = 20.042130 + u * (-0.967425)
+    py = -38.313426 + u * (0.253159)
     pz = v
     pts_28.append(FreeCAD.Vector(px, py, pz))
 bsp_28 = Part.BSplineCurve()
@@ -503,15 +503,15 @@ obj_28 = doc.addObject("Part::Feature", "Limacon_29")
 obj_28.Shape = bsp_28.toShape()
 sections.append(obj_28)
 
-# Section 30: origin=(20.2585,-37.4770), dia=12.44"
+# Section 30: (20.314,-37.259), dia=12.4"
 pts_29 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.145957 + 2.072979 * math.cos(theta)
+    r = 4.138169 + 2.069085 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 20.258525 + u * (-0.968781)
-    py = -37.476956 + u * (0.247920)
+    px = 20.314217 + u * (-0.969086)
+    py = -37.258761 + u * (0.246722)
     pz = v
     pts_29.append(FreeCAD.Vector(px, py, pz))
 bsp_29 = Part.BSplineCurve()
@@ -520,15 +520,15 @@ obj_29 = doc.addObject("Part::Feature", "Limacon_30")
 obj_29.Shape = bsp_29.toShape()
 sections.append(obj_29)
 
-# Section 31: origin=(20.4843,-36.5860), dia=12.34"
+# Section 31: (20.582,-36.197), dia=12.3"
 pts_30 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.114391 + 2.057196 * math.cos(theta)
+    r = 4.100790 + 2.050395 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 20.484257 + u * (-0.969909)
-    py = -36.585988 + u * (0.243468)
+    px = 20.581523 + u * (-0.970303)
+    py = -36.197145 + u * (0.241894)
     pz = v
     pts_30.append(FreeCAD.Vector(px, py, pz))
 bsp_30 = Part.BSplineCurve()
@@ -537,15 +537,15 @@ obj_30 = doc.addObject("Part::Feature", "Limacon_31")
 obj_30.Shape = bsp_30.toShape()
 sections.append(obj_30)
 
-# Section 32: origin=(20.7070,-35.6919), dia=12.25"
+# Section 32: (20.844,-35.137), dia=12.2"
 pts_31 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.083245 + 2.041622 * math.cos(theta)
+    r = 4.064120 + 2.032060 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 20.706990 + u * (-0.970731)
-    py = -35.691881 + u * (0.240168)
+    px = 20.843752 + u * (-0.971096)
+    py = -35.137204 + u * (0.238690)
     pz = v
     pts_31.append(FreeCAD.Vector(px, py, pz))
 bsp_31 = Part.BSplineCurve()
@@ -554,15 +554,15 @@ obj_31 = doc.addObject("Part::Feature", "Limacon_32")
 obj_31.Shape = bsp_31.toShape()
 sections.append(obj_31)
 
-# Section 33: origin=(20.9272,-34.7971), dia=12.16"
+# Section 33: (21.104,-34.072), dia=12.1"
 pts_32 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.052451 + 2.026225 * math.cos(theta)
+    r = 4.027666 + 2.013833 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 20.927203 + u * (-0.971265)
-    py = -34.797148 + u * (0.237999)
+    px = 21.104445 + u * (-0.971492)
+    py = -34.072134 + u * (0.237071)
     pz = v
     pts_32.append(FreeCAD.Vector(px, py, pz))
 bsp_32 = Part.BSplineCurve()
@@ -571,15 +571,15 @@ obj_32 = doc.addObject("Part::Feature", "Limacon_33")
 obj_32.Shape = bsp_32.toShape()
 sections.append(obj_32)
 
-# Section 34: origin=(21.1459,-33.9020), dia=12.07"
+# Section 34: (21.363,-33.011), dia=12.0"
 pts_33 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 4.021863 + 2.010932 * math.cos(theta)
+    r = 3.991489 + 1.995744 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 21.145940 + u * (-0.971519)
-    py = -33.902048 + u * (0.236961)
+    px = 21.363150 + u * (-0.971497)
+    py = -33.011317 + u * (0.237053)
     pz = v
     pts_33.append(FreeCAD.Vector(px, py, pz))
 bsp_33 = Part.BSplineCurve()
@@ -588,15 +588,15 @@ obj_33 = doc.addObject("Part::Feature", "Limacon_34")
 obj_33.Shape = bsp_33.toShape()
 sections.append(obj_33)
 
-# Section 35: origin=(21.3642,-33.0068), dia=11.97"
+# Section 35: (21.623,-31.951), dia=11.9"
 pts_34 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.991336 + 1.995668 * math.cos(theta)
+    r = 3.955190 + 1.977595 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 21.364242 + u * (-0.971496)
-    py = -33.006841 + u * (0.237056)
+    px = 21.622725 + u * (-0.971111)
+    py = -31.950619 + u * (0.238627)
     pz = v
     pts_34.append(FreeCAD.Vector(px, py, pz))
 bsp_34 = Part.BSplineCurve()
@@ -605,15 +605,15 @@ obj_34 = doc.addObject("Part::Feature", "Limacon_35")
 obj_34.Shape = bsp_34.toShape()
 sections.append(obj_34)
 
-# Section 36: origin=(21.5832,-32.1118), dia=11.88"
+# Section 36: (21.885,-30.890), dia=11.8"
 pts_35 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.960724 + 1.980362 * math.cos(theta)
+    r = 3.918515 + 1.959257 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 21.583153 + u * (-0.971196)
-    py = -32.111786 + u * (0.238284)
+    px = 21.884999 + u * (-0.970344)
+    py = -30.890013 + u * (0.241727)
     pz = v
     pts_35.append(FreeCAD.Vector(px, py, pz))
 bsp_35 = Part.BSplineCurve()
@@ -622,15 +622,15 @@ obj_35 = doc.addObject("Part::Feature", "Limacon_36")
 obj_35.Shape = bsp_35.toShape()
 sections.append(obj_35)
 
-# Section 37: origin=(21.8038,-31.2166), dia=11.79"
+# Section 37: (22.151,-29.830), dia=11.6"
 pts_36 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.929864 + 1.964932 * math.cos(theta)
+    r = 3.881254 + 1.940627 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 21.803841 + u * (-0.970620)
-    py = -31.216609 + u * (0.240616)
+    px = 22.151459 + u * (-0.969197)
+    py = -29.830440 + u * (0.246286)
     pz = v
     pts_36.append(FreeCAD.Vector(px, py, pz))
 bsp_36 = Part.BSplineCurve()
@@ -639,15 +639,15 @@ obj_36 = doc.addObject("Part::Feature", "Limacon_37")
 obj_36.Shape = bsp_36.toShape()
 sections.append(obj_36)
 
-# Section 38: origin=(22.0272,-30.3221), dia=11.70"
+# Section 38: (22.425,-28.768), dia=11.5"
 pts_37 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.898635 + 1.949317 * math.cos(theta)
+    r = 3.843023 + 1.921511 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 22.027164 + u * (-0.969778)
-    py = -30.322068 + u * (0.243989)
+    px = 22.424853 + u * (-0.967642)
+    py = -28.767894 + u * (0.252327)
     pz = v
     pts_37.append(FreeCAD.Vector(px, py, pz))
 bsp_37 = Part.BSplineCurve()
@@ -656,15 +656,15 @@ obj_37 = doc.addObject("Part::Feature", "Limacon_38")
 obj_37.Shape = bsp_37.toShape()
 sections.append(obj_37)
 
-# Section 39: origin=(22.2541,-29.4284), dia=11.60"
+# Section 39: (22.704,-27.712), dia=11.4"
 pts_38 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.866904 + 1.933452 * math.cos(theta)
+    r = 3.803921 + 1.901961 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 22.254072 + u * (-0.968658)
-    py = -29.428436 + u * (0.248398)
+    px = 22.704474 + u * (-0.965664)
+    py = -27.711761 + u * (0.259793)
     pz = v
     pts_38.append(FreeCAD.Vector(px, py, pz))
 bsp_38 = Part.BSplineCurve()
@@ -673,15 +673,15 @@ obj_38 = doc.addObject("Part::Feature", "Limacon_39")
 obj_38.Shape = bsp_38.toShape()
 sections.append(obj_38)
 
-# Section 40: origin=(22.4855,-28.5360), dia=11.50"
+# Section 40: (22.993,-26.659), dia=11.3"
 pts_39 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.834539 + 1.917270 * math.cos(theta)
+    r = 3.763600 + 1.881800 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 22.485519 + u * (-0.967246)
-    py = -28.535986 + u * (0.253842)
+    px = 22.992817 + u * (-0.963245)
+    py = -26.658766 + u * (0.268625)
     pz = v
     pts_39.append(FreeCAD.Vector(px, py, pz))
 bsp_39 = Part.BSplineCurve()
@@ -690,15 +690,15 @@ obj_39 = doc.addObject("Part::Feature", "Limacon_40")
 obj_39.Shape = bsp_39.toShape()
 sections.append(obj_39)
 
-# Section 41: origin=(22.7225,-27.6450), dia=11.40"
+# Section 41: (23.291,-25.609), dia=11.2"
 pts_40 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.801406 + 1.900703 * math.cos(theta)
+    r = 3.721836 + 1.860918 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 22.722456 + u * (-0.965524)
-    py = -27.644993 + u * (0.260314)
+    px = 23.291474 + u * (-0.960387)
+    py = -25.608623 + u * (0.278671)
     pz = v
     pts_40.append(FreeCAD.Vector(px, py, pz))
 bsp_40 = Part.BSplineCurve()
@@ -707,15 +707,15 @@ obj_40 = doc.addObject("Part::Feature", "Limacon_41")
 obj_40.Shape = bsp_40.toShape()
 sections.append(obj_40)
 
-# Section 42: origin=(22.9656,-26.7564), dia=11.30"
+# Section 42: (23.603,-24.557), dia=11.0"
 pts_41 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.767401 + 1.883700 * math.cos(theta)
+    r = 3.678261 + 1.839131 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 22.965637 + u * (-0.963487)
-    py = -26.756399 + u * (0.267754)
+    px = 23.603087 + u * (-0.957036)
+    py = -24.557466 + u * (0.289970)
     pz = v
     pts_41.append(FreeCAD.Vector(px, py, pz))
 bsp_41 = Part.BSplineCurve()
@@ -724,15 +724,15 @@ obj_41 = doc.addObject("Part::Feature", "Limacon_42")
 obj_41.Shape = bsp_41.toShape()
 sections.append(obj_41)
 
-# Section 43: origin=(23.2161,-25.8698), dia=11.20"
+# Section 43: (23.926,-23.515), dia=10.9"
 pts_42 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.732378 + 1.866189 * math.cos(theta)
+    r = 3.633059 + 1.816530 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 23.216088 + u * (-0.961141)
-    py = -25.869757 + u * (0.276058)
+    px = 23.926333 + u * (-0.953176)
+    py = -23.514730 + u * (0.302417)
     pz = v
     pts_42.append(FreeCAD.Vector(px, py, pz))
 bsp_42 = Part.BSplineCurve()
@@ -741,15 +741,15 @@ obj_42 = doc.addObject("Part::Feature", "Limacon_43")
 obj_42.Shape = bsp_42.toShape()
 sections.append(obj_42)
 
-# Section 44: origin=(23.4746,-24.9854), dia=11.09"
+# Section 44: (24.265,-22.473), dia=10.8"
 pts_43 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.696230 + 1.848115 * math.cos(theta)
+    r = 3.585694 + 1.792847 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 23.474586 + u * (-0.958462)
-    py = -24.985427 + u * (0.285219)
+    px = 24.265050 + u * (-0.948748)
+    py = -22.472755 + u * (0.316034)
     pz = v
     pts_43.append(FreeCAD.Vector(px, py, pz))
 bsp_43 = Part.BSplineCurve()
@@ -758,15 +758,15 @@ obj_43 = doc.addObject("Part::Feature", "Limacon_44")
 obj_43.Shape = bsp_43.toShape()
 sections.append(obj_43)
 
-# Section 45: origin=(23.7419,-24.1038), dia=10.98"
+# Section 45: (24.618,-21.440), dia=10.6"
 pts_44 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.658849 + 1.829424 * math.cos(theta)
+    r = 3.536389 + 1.768195 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 23.741906 + u * (-0.955425)
-    py = -24.103768 + u * (0.295234)
+    px = 24.617631 + u * (-0.943822)
+    py = -21.440320 + u * (0.330455)
     pz = v
     pts_44.append(FreeCAD.Vector(px, py, pz))
 bsp_44 = Part.BSplineCurve()
@@ -775,15 +775,15 @@ obj_44 = doc.addObject("Part::Feature", "Limacon_45")
 obj_44.Shape = bsp_44.toShape()
 sections.append(obj_44)
 
-# Section 46: origin=(24.0188,-23.2251), dia=10.86"
+# Section 46: (24.988,-20.409), dia=10.5"
 pts_45 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.620125 + 1.810063 * math.cos(theta)
+    r = 3.484598 + 1.742299 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 24.018824 + u * (-0.952002)
-    py = -23.225140 + u * (0.306093)
+    px = 24.987997 + u * (-0.938319)
+    py = -20.409213 + u * (0.345771)
     pz = v
     pts_45.append(FreeCAD.Vector(px, py, pz))
 bsp_45 = Part.BSplineCurve()
@@ -792,15 +792,15 @@ obj_45 = doc.addObject("Part::Feature", "Limacon_46")
 obj_45.Shape = bsp_45.toShape()
 sections.append(obj_45)
 
-# Section 47: origin=(24.3059,-22.3505), dia=10.74"
+# Section 47: (25.374,-19.389), dia=10.3"
 pts_46 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.579983 + 1.789991 * math.cos(theta)
+    r = 3.430636 + 1.715318 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 24.305889 + u * (-0.948193)
-    py = -22.350510 + u * (0.317695)
+    px = 25.373892 + u * (-0.932239)
+    py = -19.388859 + u * (0.361844)
     pz = v
     pts_46.append(FreeCAD.Vector(px, py, pz))
 bsp_46 = Part.BSplineCurve()
@@ -809,15 +809,15 @@ obj_46 = doc.addObject("Part::Feature", "Limacon_47")
 obj_46.Shape = bsp_46.toShape()
 sections.append(obj_46)
 
-# Section 48: origin=(24.6040,-21.4794), dia=10.61"
+# Section 48: (25.779,-18.371), dia=10.1"
 pts_47 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.538302 + 1.769151 * math.cos(theta)
+    r = 3.373934 + 1.686967 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 24.603951 + u * (-0.944019)
-    py = -21.479428 + u * (0.329892)
+    px = 25.779377 + u * (-0.925568)
+    py = -18.371370 + u * (0.378581)
     pz = v
     pts_47.append(FreeCAD.Vector(px, py, pz))
 bsp_47 = Part.BSplineCurve()
@@ -826,15 +826,15 @@ obj_47 = doc.addObject("Part::Feature", "Limacon_48")
 obj_47.Shape = bsp_47.toShape()
 sections.append(obj_47)
 
-# Section 49: origin=(24.9135,-20.6123), dia=10.49"
+# Section 49: (26.202,-17.366), dia=9.9"
 pts_48 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.495013 + 1.747506 * math.cos(theta)
+    r = 3.314868 + 1.657434 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 24.913522 + u * (-0.939452)
-    py = -20.612348 + u * (0.342680)
+    px = 26.201761 + u * (-0.918287)
+    py = -17.365533 + u * (0.395915)
     pz = v
     pts_48.append(FreeCAD.Vector(px, py, pz))
 bsp_48 = Part.BSplineCurve()
@@ -843,15 +843,15 @@ obj_48 = doc.addObject("Part::Feature", "Limacon_49")
 obj_48.Shape = bsp_48.toShape()
 sections.append(obj_48)
 
-# Section 50: origin=(25.2351,-19.7497), dia=10.35"
+# Section 50: (26.645,-16.364), dia=9.8"
 pts_49 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.450042 + 1.725021 * math.cos(theta)
+    r = 3.252819 + 1.626410 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 25.235115 + u * (-0.934465)
-    py = -19.749723 + u * (0.356054)
+    px = 26.645482 + u * (-0.910181)
+    py = -16.363786 + u * (0.414210)
     pz = v
     pts_49.append(FreeCAD.Vector(px, py, pz))
 bsp_49 = Part.BSplineCurve()
@@ -860,15 +860,15 @@ obj_49 = doc.addObject("Part::Feature", "Limacon_50")
 obj_49.Shape = bsp_49.toShape()
 sections.append(obj_49)
 
-# Section 51: origin=(25.5692,-18.8920), dia=10.21"
+# Section 51: (27.108,-15.376), dia=9.6"
 pts_50 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.403318 + 1.701659 * math.cos(theta)
+    r = 3.188187 + 1.594093 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 25.569241 + u * (-0.929030)
-    py = -18.892009 + u * (0.370005)
+    px = 27.107677 + u * (-0.901252)
+    py = -15.375657 + u * (0.433296)
     pz = v
     pts_50.append(FreeCAD.Vector(px, py, pz))
 bsp_50 = Part.BSplineCurve()
@@ -877,15 +877,15 @@ obj_50 = doc.addObject("Part::Feature", "Limacon_51")
 obj_50.Shape = bsp_50.toShape()
 sections.append(obj_50)
 
-# Section 52: origin=(25.9163,-18.0395), dia=10.06"
+# Section 52: (27.593,-14.394), dia=9.4"
 pts_51 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.354787 + 1.677393 * math.cos(theta)
+    r = 3.120344 + 1.560172 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 25.916297 + u * (-0.923255)
-    py = -18.039489 + u * (0.384188)
+    px = 27.592829 + u * (-0.891395)
+    py = -14.394438 + u * (0.453226)
     pz = v
     pts_51.append(FreeCAD.Vector(px, py, pz))
 bsp_51 = Part.BSplineCurve()
@@ -894,15 +894,15 @@ obj_51 = doc.addObject("Part::Feature", "Limacon_52")
 obj_51.Shape = bsp_51.toShape()
 sections.append(obj_51)
 
-# Section 53: origin=(26.2768,-17.1923), dia=9.91"
+# Section 53: (28.100,-13.426), dia=9.1"
 pts_52 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.304378 + 1.652189 * math.cos(theta)
+    r = 3.049369 + 1.524684 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 26.276779 + u * (-0.916949)
-    py = -17.192337 + u * (0.399004)
+    px = 28.100386 + u * (-0.879786)
+    py = -13.425560 + u * (0.475370)
     pz = v
     pts_52.append(FreeCAD.Vector(px, py, pz))
 bsp_52 = Part.BSplineCurve()
@@ -911,15 +911,15 @@ obj_52 = doc.addObject("Part::Feature", "Limacon_53")
 obj_52.Shape = bsp_52.toShape()
 sections.append(obj_52)
 
-# Section 54: origin=(26.6512,-16.3512), dia=9.76"
+# Section 54: (28.632,-12.474), dia=8.9"
 pts_53 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.252019 + 1.626010 * math.cos(theta)
+    r = 2.975065 + 1.487532 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 26.651204 + u * (-0.910074)
-    py = -16.351217 + u * (0.414446)
+    px = 28.631745 + u * (-0.865690)
+    py = -12.474483 + u * (0.500581)
     pz = v
     pts_53.append(FreeCAD.Vector(px, py, pz))
 bsp_53 = Part.BSplineCurve()
@@ -928,15 +928,15 @@ obj_53 = doc.addObject("Part::Feature", "Limacon_54")
 obj_53.Shape = bsp_53.toShape()
 sections.append(obj_53)
 
-# Section 55: origin=(27.0401,-15.5168), dia=9.59"
+# Section 55: (29.194,-11.537), dia=8.7"
 pts_54 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.197638 + 1.598819 * math.cos(theta)
+    r = 2.896373 + 1.448186 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 27.040091 + u * (-0.902588)
-    py = -15.516795 + u * (0.430505)
+    px = 29.194480 + u * (-0.848656)
+    py = -11.536695 + u * (0.528945)
     pz = v
     pts_54.append(FreeCAD.Vector(px, py, pz))
 bsp_54 = Part.BSplineCurve()
@@ -945,15 +945,15 @@ obj_54 = doc.addObject("Part::Feature", "Limacon_55")
 obj_54.Shape = bsp_54.toShape()
 sections.append(obj_54)
 
-# Section 56: origin=(27.4440,-14.6897), dia=9.42"
+# Section 56: (29.790,-10.620), dia=8.4"
 pts_55 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.141162 + 1.570581 * math.cos(theta)
+    r = 2.813166 + 1.406583 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 27.443957 + u * (-0.894450)
-    py = -14.689733 + u * (0.447168)
+    px = 29.789504 + u * (-0.828096)
+    py = -10.619819 + u * (0.560587)
     pz = v
     pts_55.append(FreeCAD.Vector(px, py, pz))
 bsp_55 = Part.BSplineCurve()
@@ -962,15 +962,15 @@ obj_55 = doc.addObject("Part::Feature", "Limacon_56")
 obj_55.Shape = bsp_55.toShape()
 sections.append(obj_55)
 
-# Section 57: origin=(27.8627,-13.8719), dia=9.25"
+# Section 57: (30.421,-9.728), dia=8.2"
 pts_56 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.082600 + 1.541300 * math.cos(theta)
+    r = 2.724872 + 1.362436 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 27.862744 + u * (-0.885450)
-    py = -13.871856 + u * (0.464734)
+    px = 30.420907 + u * (-0.804411)
+    py = -9.728066 + u * (0.594073)
     pz = v
     pts_56.append(FreeCAD.Vector(px, py, pz))
 bsp_56 = Part.BSplineCurve()
@@ -979,15 +979,15 @@ obj_56 = doc.addObject("Part::Feature", "Limacon_57")
 obj_56.Shape = bsp_56.toShape()
 sections.append(obj_56)
 
-# Section 58: origin=(28.2990,-13.0626), dia=9.06"
+# Section 58: (31.086,-8.860), dia=7.9"
 pts_57 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 3.021601 + 1.510801 * math.cos(theta)
+    r = 2.631842 + 1.315921 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 28.298954 + u * (-0.874748)
-    py = -13.062589 + u * (0.484578)
+    px = 31.086180 + u * (-0.783109)
+    py = -8.860398 + u * (0.621884)
     pz = v
     pts_57.append(FreeCAD.Vector(px, py, pz))
 bsp_57 = Part.BSplineCurve()
@@ -996,15 +996,15 @@ obj_57 = doc.addObject("Part::Feature", "Limacon_58")
 obj_57.Shape = bsp_57.toShape()
 sections.append(obj_57)
 
-# Section 59: origin=(28.7544,-12.2640), dia=8.87"
+# Section 59: (31.779,-8.014), dia=7.6"
 pts_58 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.957909 + 1.478955 * math.cos(theta)
+    r = 2.534931 + 1.267466 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 28.754425 + u * (-0.862158)
-    py = -12.264023 + u * (0.506639)
+    px = 31.779202 + u * (-0.764667)
+    py = -8.014180 + u * (0.644426)
     pz = v
     pts_58.append(FreeCAD.Vector(px, py, pz))
 bsp_58 = Part.BSplineCurve()
@@ -1013,15 +1013,15 @@ obj_58 = doc.addObject("Part::Feature", "Limacon_59")
 obj_58.Shape = bsp_58.toShape()
 sections.append(obj_58)
 
-# Section 60: origin=(29.2310,-11.4783), dia=8.67"
+# Section 60: (32.494,-7.187), dia=7.3"
 pts_59 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.891267 + 1.445633 * math.cos(theta)
+    r = 2.434996 + 1.217498 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 29.230996 + u * (-0.847478)
-    py = -11.478253 + u * (0.530830)
+    px = 32.493851 + u * (-0.749437)
+    py = -7.186776 + u * (0.662076)
     pz = v
     pts_59.append(FreeCAD.Vector(px, py, pz))
 bsp_59 = Part.BSplineCurve()
@@ -1030,15 +1030,15 @@ obj_59 = doc.addObject("Part::Feature", "Limacon_60")
 obj_59.Shape = bsp_59.toShape()
 sections.append(obj_59)
 
-# Section 61: origin=(29.7305,-10.7074), dia=8.46"
+# Section 61: (33.229,-6.379), dia=7.0"
 pts_60 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.821416 + 1.410708 * math.cos(theta)
+    r = 2.332164 + 1.166082 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 29.730507 + u * (-0.830489)
-    py = -10.707371 + u * (0.557035)
+    px = 33.229221 + u * (-0.728344)
+    py = -6.378540 + u * (0.685211)
     pz = v
     pts_60.append(FreeCAD.Vector(px, py, pz))
 bsp_60 = Part.BSplineCurve()
@@ -1047,15 +1047,15 @@ obj_60 = doc.addObject("Part::Feature", "Limacon_61")
 obj_60.Shape = bsp_60.toShape()
 sections.append(obj_60)
 
-# Section 62: origin=(30.2556,-9.9542), dia=8.24"
+# Section 62: (33.994,-5.596), dia=6.7"
 pts_61 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.747988 + 1.373994 * math.cos(theta)
+    r = 2.225222 + 1.112611 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 30.255604 + u * (-0.810277)
-    py = -9.954224 + u * (0.586048)
+    px = 33.993973 + u * (-0.700675)
+    py = -5.596237 + u * (0.713481)
     pz = v
     pts_61.append(FreeCAD.Vector(px, py, pz))
 bsp_61 = Part.BSplineCurve()
@@ -1064,15 +1064,15 @@ obj_61 = doc.addObject("Part::Feature", "Limacon_62")
 obj_61.Shape = bsp_61.toShape()
 sections.append(obj_61)
 
-# Section 63: origin=(30.8057,-9.2186), dia=8.01"
+# Section 63: (34.792,-4.848), dia=6.3"
 pts_62 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.671060 + 1.335530 * math.cos(theta)
+    r = 2.113694 + 1.056847 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 30.805727 + u * (-0.791647)
-    py = -9.218562 + u * (0.610979)
+    px = 34.791528 + u * (-0.666280)
+    py = -4.848124 + u * (0.745702)
     pz = v
     pts_62.append(FreeCAD.Vector(px, py, pz))
 bsp_62 = Part.BSplineCurve()
@@ -1081,15 +1081,15 @@ obj_62 = doc.addObject("Part::Feature", "Limacon_63")
 obj_62.Shape = bsp_62.toShape()
 sections.append(obj_62)
 
-# Section 64: origin=(31.3772,-8.4988), dia=7.77"
+# Section 64: (35.625,-4.143), dia=6.0"
 pts_63 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.591140 + 1.295570 * math.cos(theta)
+    r = 1.997119 + 0.998560 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 31.377244 + u * (-0.774911)
-    py = -8.498822 + u * (0.632071)
+    px = 35.625171 + u * (-0.624326)
+    py = -4.142525 + u * (0.781164)
     pz = v
     pts_63.append(FreeCAD.Vector(px, py, pz))
 bsp_63 = Part.BSplineCurve()
@@ -1098,15 +1098,15 @@ obj_63 = doc.addObject("Part::Feature", "Limacon_64")
 obj_63.Shape = bsp_63.toShape()
 sections.append(obj_63)
 
-# Section 65: origin=(31.9665,-7.7934), dia=7.53"
+# Section 65: (36.517,-3.510), dia=5.6"
 pts_64 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.508737 + 1.254368 * math.cos(theta)
+    r = 1.872380 + 0.936190 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 31.966521 + u * (-0.760311)
-    py = -7.793439 + u * (0.649560)
+    px = 36.517198 + u * (-0.521015)
+    py = -3.510259 + u * (0.853548)
     pz = v
     pts_64.append(FreeCAD.Vector(px, py, pz))
 bsp_64 = Part.BSplineCurve()
@@ -1115,15 +1115,15 @@ obj_64 = doc.addObject("Part::Feature", "Limacon_65")
 obj_64.Shape = bsp_64.toShape()
 sections.append(obj_64)
 
-# Section 66: origin=(32.5699,-7.1008), dia=7.27"
+# Section 66: (37.468,-2.972), dia=5.2"
 pts_65 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.424358 + 1.212179 * math.cos(theta)
+    r = 1.739367 + 0.869683 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 32.569925 + u * (-0.748034)
-    py = -7.100848 + u * (0.663660)
+    px = 37.468397 + u * (-0.477143)
+    py = -2.972211 + u * (0.878826)
     pz = v
     pts_65.append(FreeCAD.Vector(px, py, pz))
 bsp_65 = Part.BSplineCurve()
@@ -1132,15 +1132,15 @@ obj_65 = doc.addObject("Part::Feature", "Limacon_66")
 obj_65.Shape = bsp_65.toShape()
 sections.append(obj_65)
 
-# Section 67: origin=(33.1883,-6.4221), dia=7.01"
+# Section 67: (38.427,-2.438), dia=4.8"
 pts_66 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.337882 + 1.168941 * math.cos(theta)
+    r = 1.605276 + 0.802638 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 33.188329 + u * (-0.729678)
-    py = -6.422091 + u * (0.683791)
+    px = 38.427299 + u * (-0.508226)
+    py = -2.438171 + u * (0.861224)
     pz = v
     pts_66.append(FreeCAD.Vector(px, py, pz))
 bsp_66 = Part.BSplineCurve()
@@ -1149,15 +1149,15 @@ obj_66 = doc.addObject("Part::Feature", "Limacon_67")
 obj_66.Shape = bsp_66.toShape()
 sections.append(obj_66)
 
-# Section 68: origin=(33.8274,-5.7613), dia=6.75"
+# Section 68: (39.331,-1.830), dia=4.4"
 pts_67 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.248509 + 1.124254 * math.cos(theta)
+    r = 1.478944 + 0.739472 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 33.827448 + u * (-0.707143)
-    py = -5.761279 + u * (0.707071)
+    px = 39.330717 + u * (-0.624074)
+    py = -1.830387 + u * (0.781365)
     pz = v
     pts_67.append(FreeCAD.Vector(px, py, pz))
 bsp_67 = Part.BSplineCurve()
@@ -1166,15 +1166,15 @@ obj_67 = doc.addObject("Part::Feature", "Limacon_68")
 obj_67.Shape = bsp_67.toShape()
 sections.append(obj_67)
 
-# Section 69: origin=(34.4892,-5.1234), dia=6.47"
+# Section 69: (40.072,-1.033), dia=4.1"
 pts_68 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.155966 + 1.077983 * math.cos(theta)
+    r = 1.375316 + 0.687658 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 34.489234 + u * (-0.679982)
-    py = -5.123350 + u * (0.733229)
+    px = 40.071777 + u * (-0.849386)
+    py = -1.033139 + u * (0.527772)
     pz = v
     pts_68.append(FreeCAD.Vector(px, py, pz))
 bsp_68 = Part.BSplineCurve()
@@ -1183,15 +1183,15 @@ obj_68 = doc.addObject("Part::Feature", "Limacon_69")
 obj_68.Shape = bsp_68.toShape()
 sections.append(obj_68)
 
-# Section 70: origin=(35.1756,-4.5132), dia=6.18"
+# Section 70: (40.372,0.000), dia=4.0"
 pts_69 = []
 for j in range(N_PTS + 1):
     theta = 2 * math.pi * j / N_PTS
-    r = 2.059981 + 1.029991 * math.cos(theta)
+    r = 1.333333 + 0.666667 * math.cos(theta)
     u = r * math.cos(theta)
     v = r * math.sin(theta)
-    px = 35.175637 + u * (-0.647705)
-    py = -4.513246 + u * (0.761892)
+    px = 40.372000 + u * (-1.000000)
+    py = 0.000000 + u * (0.000000)
     pz = v
     pts_69.append(FreeCAD.Vector(px, py, pz))
 bsp_69 = Part.BSplineCurve()
