@@ -1,5 +1,4 @@
-# Erard Soundbox - bezier curve, vertical takeoff, 18"->4" limacon a=2b
-# 6002 vertices, 12000 faces, 100 sections
+# Erard Soundbox - smooth bezier, vertical takeoff
 v -2.000000 -65.643000 0.000000
 v -1.934353 -65.643000 0.939038
 v -1.739204 -65.643000 1.857575
