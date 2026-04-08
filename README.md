@@ -118,6 +118,102 @@ Where `polar_dir` is the unit vector from origin to cusp (so `-polar_dir` points
 | Cross-sections | 50 |
 | Takeoff angles | 90" (vertical) at base and neck |
 
+## Stringband Data
+
+### Note Map (47 strings, highest to lowest)
+
+| Str# | Note | Octave | Material | Color | Spacing Group |
+|------|------|--------|----------|-------|---------------|
+| 1 | G | 0 | Nylon | white | 0.706" |
+| 2 | F | 0 | Nylon | blue | 0.706" |
+| 3 | E | 1st | Nylon | white | 0.706" |
+| 4 | D | 1st | Nylon | white | 0.706" |
+| 5 | C | 1st | Nylon | **red** | 0.706" |
+| 6 | B | 1st | Nylon | white | 0.706" |
+| 7 | A | 1st | Nylon | white | 0.706" |
+| 8 | G | 1st | Gut | white | 0.706" |
+| 9 | F | 1st | Gut | blue | 0.706" |
+| 10 | E | 2nd | Gut | white | 0.706" |
+| 11 | D | 2nd | Gut | white | 0.706" |
+| 12 | C | 2nd | Gut | **red** | 0.686" |
+| 13 | B | 2nd | Gut | white | 0.686" |
+| 14 | A | 2nd | Gut | white | 0.686" |
+| 15 | G | 2nd | Gut | white | 0.686" |
+| 16 | F | 2nd | Gut | blue | 0.646" |
+| 17 | E | 3rd | Gut | white | 0.646" |
+| 18 | D | 3rd | Gut | white | 0.646" |
+| 19 | C | 3rd | Gut | **red** | 0.606" |
+| 20 | B | 3rd | Gut | white | 0.606" |
+| 21 | A | 3rd | Gut | white | 0.606" |
+| 22 | G | 3rd | Gut | white | 0.606" |
+| 23 | F | 3rd | Gut | blue | 0.606" |
+| 24 | E | 4th | Gut | white | 0.565" |
+| 25 | D | 4th | Gut | white | 0.565" |
+| 26 | C | 4th | Gut | **red** | 0.565" |
+| 27 | B | 4th | Gut | white | 0.565" |
+| 28 | A | 4th | Gut | white | 0.565" |
+| 29 | G | 4th | Gut | white | 0.565" |
+| 30 | F | 4th | Gut | blue | 0.565" |
+| 31 | E | 5th | Gut | white | 0.565" |
+| 32 | D | 5th | Gut | white | 0.565" |
+| 33 | C | 5th | Gut | **red** | 0.565" |
+| 34 | B | 5th | Wire | white | 0.525" |
+| 35 | A | 5th | Wire | white | 0.525" |
+| 36 | G | 5th | Wire | white | 0.525" |
+| 37 | F | 5th | Wire | blue | 0.525" |
+| 38 | E | 6th | Wire | white | 0.525" |
+| 39 | D | 6th | Wire | white | 0.525" |
+| 40 | C | 6th | Wire | **red** | 0.525" |
+| 41 | B | 6th | Wire | white | 0.525" |
+| 42 | A | 6th | Wire | white | 0.525" |
+| 43 | G | 6th | Wire | white | 0.525" |
+| 44 | F | 6th | Wire | blue | 0.525" |
+| 45 | E | 7th | Wire | white | 0.525" |
+| 46 | D | 7th | Wire | white | 0.525" |
+| 47 | C | 7th | Wire | **red** | — |
+
+### String Materials
+
+| Register | Strings | Material | Diameter Range |
+|----------|---------|----------|----------------|
+| Treble (0th-1st octave) | 1-7 | Nylon | 0.45 - 0.60 mm |
+| Mid (2nd-5th octave) | 8-33 | Natural gut | 0.60 - 2.05 mm |
+| Bass (5th-7th octave) | 34-47 | Steel wire | 1.42 - 1.82 mm |
+
+Material transitions at strings 8 (nylon→gut) and 34 (gut→wire) correspond to pin spacing changes.
+
+### String Tension
+
+| Property | Value |
+|----------|-------|
+| Total soundboard load | ~2,250 lbs (10 kN) |
+| Per-string (treble) | ~13 lbs (60 N) |
+| Per-string (mid gut) | ~31 lbs (140 N) |
+| Per-string (bass) | ~47 lbs (210 N) |
+
+### Color Coding
+
+- **Red**: C strings (strings 5, 12, 19, 26, 33, 40, 47)
+- **Blue/Black**: F strings (strings 2, 9, 16, 23, 30, 37, 44)
+- **White**: All other notes
+
+### Material Properties
+
+| Material | Density (kg/m³) | Tensile Strength (psi) |
+|----------|----------------|----------------------|
+| Nylon | 1,067 | 44,600 |
+| Gut | 1,300 | 52,000 |
+| Steel music wire | 7,830 | 325,000 |
+
+### References
+
+- [Harp Connection - 47 String Chart](https://www.harpconnection.com/PDF%20String%20Charts/String%20Chart%20Pedal%2047.pdf)
+- [Morley Harps - Bow Brand Gut Diameters](https://www.morleyharps.co.uk/Files/116004/Bow_Brand_Gut_Diameters.pdf)
+- [Sligo Harps - String Theory](http://www.sligoharps.com/string.html)
+- [HarpCanada - StringBand Manager](https://www.harpcanada.com/stringband.htm)
+- [Old Harps Made Young - String Tension](https://www.oldharpsmadeyoung.com/single-post/2014/09/26/string-and-string-tension)
+- [Metropolitan Museum - Erard String Gauge 1829](https://www.metmuseum.org/art/collection/search/504046)
+
 ## Running
 
 Requires FreeCAD 1.1 with Python 3.11 and scipy:
