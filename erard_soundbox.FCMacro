@@ -1,962 +1,218 @@
-# FreeCAD macro - Erard Harp Soundbox Limaçons
-# 47 limaçon cross-sections perpendicular to soundboard curve
-import FreeCAD, Part, math
+# FreeCAD macro - Erard Harp Soundbox with limaçon cross-sections
+# Uses scipy CubicSpline for soundboard and cusp curves
+import sys, os, math
+import numpy as np
+from scipy.interpolate import CubicSpline
+
+# sys.path handled externally
+import FreeCAD, Part
+
+SAVE_PATH = '/home/clementsj/projects/clements47/Clements47.FCStd'
+
+# ---------------------------------------------------------------------------
+# 1. Soundboard curve  (11 nodes, clamped cubic spline, dx/dt=0 at ends)
+# ---------------------------------------------------------------------------
+
+# 7 grommet nodes (strings 1,8,16,24,32,40,47)
+selected_7 = np.array([
+    (10.0,   -59.6486),
+    (14.943, -51.8946),
+    (20.512, -36.3672),
+    (25.476, -19.0939),
+    (30.076, -10.2416),
+    (34.313,  -5.2852),
+    (37.986,  -2.3942),
+])
+
+# Bass extension: 2" beyond string 1 along tangent (away from strings)
+tang_bass = selected_7[1] - selected_7[0]
+tang_bass = tang_bass / np.linalg.norm(tang_bass)
+bass_ext = selected_7[0] - 2.0 * tang_bass
+
+# Treble extension: 2" beyond string 47 along tangent
+tang_treb = selected_7[-1] - selected_7[-2]
+tang_treb = tang_treb / np.linalg.norm(tang_treb)
+treb_ext = selected_7[-1] + 2.0 * tang_treb
+
+# Base and neck endpoints
+base = np.array([7.0, -65.6486])
+neck = np.array([40.3802, 0.0])
+
+# 11 nodes: base, bass_ext, 7 grommets, treb_ext, neck
+sb_nodes = np.vstack([base, bass_ext, selected_7, treb_ext, neck])
+n_sb = len(sb_nodes)  # 11
+
+# Parameterise by cumulative chord length
+t_sb = np.zeros(n_sb)
+for i in range(1, n_sb):
+    t_sb[i] = t_sb[i-1] + np.linalg.norm(sb_nodes[i] - sb_nodes[i-1])
+
+# Clamped BCs: dx/dt=0 (vertical takeoff) at both ends
+# Tangent direction at start/end is purely dy/dt, so dx/dt=0, dy/dt=1 (or -1)
+# We set bc = ((1, [0, slope_y_start]), (1, [0, slope_y_end]))
+# slope_y at start: direction from base toward bass_ext
+dir_start = sb_nodes[1] - sb_nodes[0]
+dir_start = dir_start / np.linalg.norm(dir_start)
+speed_start = np.linalg.norm(sb_nodes[1] - sb_nodes[0])
+
+dir_end = sb_nodes[-1] - sb_nodes[-2]
+dir_end = dir_end / np.linalg.norm(dir_end)
+speed_end = np.linalg.norm(sb_nodes[-1] - sb_nodes[-2])
+
+# Vertical takeoff means dx/dt = 0. We enforce this via bc_type clamped
+# with tangent vectors that have zero x-component.
+# The magnitude of dy/dt is set to match the average parametric speed.
+avg_speed = t_sb[-1] / (n_sb - 1)
+
+sb_x_spline = CubicSpline(t_sb, sb_nodes[:, 0],
+                           bc_type=((1, 0.0), (1, 0.0)))
+sb_y_spline = CubicSpline(t_sb, sb_nodes[:, 1],
+                           bc_type=((1, avg_speed), (1, avg_speed)))
+
+def sb_eval(t):
+    """Return (x, y) on soundboard curve."""
+    return np.array([sb_x_spline(t), sb_y_spline(t)])
+
+def sb_tangent(t):
+    """Return unit tangent on soundboard curve."""
+    tx = float(sb_x_spline(t, 1))
+    ty = float(sb_y_spline(t, 1))
+    norm = math.hypot(tx, ty)
+    return np.array([tx / norm, ty / norm])
+
+# ---------------------------------------------------------------------------
+# 2. 51 input points on soundboard (base, bass_ext, 47 strings, treb_ext, neck)
+# ---------------------------------------------------------------------------
+
+all_47 = np.array([
+    (10.0, -59.6486), (10.706, -58.6226), (11.412, -57.6990),
+    (12.119, -56.6390), (12.825, -55.4580), (13.531, -54.2660),
+    (14.237, -53.1225), (14.943, -51.8946), (15.65, -50.3820),
+    (16.356, -49.0559), (17.062, -48.1801), (17.768, -46.3282),
+    (18.454, -44.0118), (19.14, -41.5922), (19.826, -39.0399),
+    (20.512, -36.3672), (21.158, -33.7892), (21.804, -31.2177),
+    (22.449, -28.7241), (23.055, -26.4986), (23.66, -24.4191),
+    (24.265, -22.4939), (24.871, -20.7197), (25.476, -19.0939),
+    (26.081, -17.6013), (26.686, -16.2291), (27.251, -15.0457),
+    (27.816, -13.9474), (28.381, -12.9256), (28.946, -11.9721),
+    (29.511, -11.0796), (30.076, -10.2416), (30.641, -9.4524),
+    (31.166, -8.7587), (31.69, -8.1013), (32.215, -7.4755),
+    (32.74, -6.8812), (33.264, -6.3188), (33.789, -5.7862),
+    (34.313, -5.2852), (34.838, -4.8131), (35.363, -4.3694),
+    (35.887, -3.9517), (36.412, -3.5536), (36.936, -3.1692),
+    (37.461, -2.7869), (37.986, -2.3942),
+])
+
+input_51 = np.vstack([base, bass_ext, all_47, treb_ext, neck])
+
+# Find parameter values for each of the 51 input points (closest on spline)
+def find_t_for_point(pt, t_grid):
+    """Find parameter t that minimises distance to pt."""
+    xs = sb_x_spline(t_grid)
+    ys = sb_y_spline(t_grid)
+    dists = (xs - pt[0])**2 + (ys - pt[1])**2
+    idx = np.argmin(dists)
+    return t_grid[idx]
+
+t_fine = np.linspace(t_sb[0], t_sb[-1], 5000)
+t_51 = np.array([find_t_for_point(p, t_fine) for p in input_51])
+
+# ---------------------------------------------------------------------------
+# 3. Cusp curve (9 nodes from 51 cusp points)
+# ---------------------------------------------------------------------------
+
+# Compute 51 cusp points
+cusp_51 = np.zeros((51, 2))
+for i in range(51):
+    pt = sb_eval(t_51[i])
+    tng = sb_tangent(t_51[i])
+    right_normal = np.array([tng[1], -tng[0]])  # (ty, -tx)
+    x_val = float(pt[0])
+    # Diameter interpolates linearly: 18" at x=7.0, 4" at x=40.3802
+    diameter = 18.0 + (4.0 - 18.0) * (x_val - 7.0) / (40.3802 - 7.0)
+    b = diameter / 6.0
+    cusp_51[i] = pt + b * right_normal
+
+# Select 9 cusp nodes at specified indices
+cusp_indices = [0, 6, 12, 19, 25, 31, 37, 44, 50]
+cusp_nodes = cusp_51[cusp_indices]
+
+# Parameterise cusp curve by cumulative chord length
+t_cusp = np.zeros(9)
+for i in range(1, 9):
+    t_cusp[i] = t_cusp[i-1] + np.linalg.norm(cusp_nodes[i] - cusp_nodes[i-1])
+
+avg_speed_c = t_cusp[-1] / 8.0
+cusp_x_spline = CubicSpline(t_cusp, cusp_nodes[:, 0],
+                             bc_type=((1, 0.0), (1, 0.0)))
+cusp_y_spline = CubicSpline(t_cusp, cusp_nodes[:, 1],
+                             bc_type=((1, avg_speed_c), (1, avg_speed_c)))
+
+# ---------------------------------------------------------------------------
+# 4. Generate ~50 cross-sections and loft
+# ---------------------------------------------------------------------------
+
+N_SECTIONS = 50
+N_PTS = 60  # points per limaçon
+
+doc = FreeCAD.newDocument('ErardHarp')
+
+t_samples = np.linspace(t_sb[0], t_sb[-1], N_SECTIONS)
+
+# For finding cusp at given x: build a fine grid on cusp curve
+t_cusp_fine = np.linspace(t_cusp[0], t_cusp[-1], 5000)
+cusp_x_fine = cusp_x_spline(t_cusp_fine)
+cusp_y_fine = cusp_y_spline(t_cusp_fine)
 
-doc = FreeCAD.activeDocument()
-if doc is None:
-    doc = FreeCAD.newDocument('ErardHarp')
-
-# Limaçon 1: diameter=10.00", a=3.0000, b=2.0000
-pts_0 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 3.000000 + 2.000000 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 10.000000 + u * -0.870518
-    py = -59.648556 + u * 0.492136
-    pz = v
-    pts_0.append(FreeCAD.Vector(px, py, pz))
-
-bsp_0 = Part.BSplineCurve()
-bsp_0.interpolate(pts_0)
-limacon_0 = doc.addObject('Part::Feature', 'Limacon_01')
-limacon_0.Shape = bsp_0.toShape()
-
-# Limaçon 2: diameter=9.85", a=2.9543, b=1.9696
-pts_1 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.954348 + 1.969565 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 10.706000 + u * -0.789087
-    py = -58.622569 + u * 0.614281
-    pz = v
-    pts_1.append(FreeCAD.Vector(px, py, pz))
-
-bsp_1 = Part.BSplineCurve()
-bsp_1.interpolate(pts_1)
-limacon_1 = doc.addObject('Part::Feature', 'Limacon_02')
-limacon_1.Shape = bsp_1.toShape()
-
-# Limaçon 3: diameter=9.70", a=2.9087, b=1.9391
-pts_2 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.908696 + 1.939130 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 11.412000 + u * -0.810605
-    py = -57.698992 + u * 0.585593
-    pz = v
-    pts_2.append(FreeCAD.Vector(px, py, pz))
-
-bsp_2 = Part.BSplineCurve()
-bsp_2.interpolate(pts_2)
-limacon_2 = doc.addObject('Part::Feature', 'Limacon_03')
-limacon_2.Shape = bsp_2.toShape()
-
-# Limaçon 4: diameter=9.54", a=2.8630, b=1.9087
-pts_3 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.863043 + 1.908696 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 12.119000 + u * -0.849165
-    py = -56.638971 + u * 0.528128
-    pz = v
-    pts_3.append(FreeCAD.Vector(px, py, pz))
-
-bsp_3 = Part.BSplineCurve()
-bsp_3.interpolate(pts_3)
-limacon_3 = doc.addObject('Part::Feature', 'Limacon_04')
-limacon_3.Shape = bsp_3.toShape()
-
-# Limaçon 5: diameter=9.39", a=2.8174, b=1.8783
-pts_4 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.817391 + 1.878261 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 12.825000 + u * -0.862948
-    py = -55.457996 + u * 0.505293
-    pz = v
-    pts_4.append(FreeCAD.Vector(px, py, pz))
-
-bsp_4 = Part.BSplineCurve()
-bsp_4.interpolate(pts_4)
-limacon_4 = doc.addObject('Part::Feature', 'Limacon_05')
-limacon_4.Shape = bsp_4.toShape()
-
-# Limaçon 6: diameter=9.24", a=2.7717, b=1.8478
-pts_5 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.771739 + 1.847826 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 13.531000 + u * -0.855370
-    py = -54.266043 + u * 0.518018
-    pz = v
-    pts_5.append(FreeCAD.Vector(px, py, pz))
-
-bsp_5 = Part.BSplineCurve()
-bsp_5.interpolate(pts_5)
-limacon_5 = doc.addObject('Part::Feature', 'Limacon_06')
-limacon_5.Shape = bsp_5.toShape()
-
-# Limaçon 7: diameter=9.09", a=2.7261, b=1.8174
-pts_6 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.726087 + 1.817391 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 14.237000 + u * -0.850705
-    py = -53.122534 + u * 0.525643
-    pz = v
-    pts_6.append(FreeCAD.Vector(px, py, pz))
-
-bsp_6 = Part.BSplineCurve()
-bsp_6.interpolate(pts_6)
-limacon_6 = doc.addObject('Part::Feature', 'Limacon_07')
-limacon_6.Shape = bsp_6.toShape()
-
-# Limaçon 8: diameter=8.93", a=2.6804, b=1.7870
-pts_7 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.680435 + 1.786957 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 14.943000 + u * -0.887905
-    py = -51.894580 + u * 0.460027
-    pz = v
-    pts_7.append(FreeCAD.Vector(px, py, pz))
-
-bsp_7 = Part.BSplineCurve()
-bsp_7.interpolate(pts_7)
-limacon_7 = doc.addObject('Part::Feature', 'Limacon_08')
-limacon_7.Shape = bsp_7.toShape()
-
-# Limaçon 9: diameter=8.78", a=2.6348, b=1.7565
-pts_8 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.634783 + 1.756522 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 15.650000 + u * -0.913505
-    py = -50.382014 + u * 0.406828
-    pz = v
-    pts_8.append(FreeCAD.Vector(px, py, pz))
-
-bsp_8 = Part.BSplineCurve()
-bsp_8.interpolate(pts_8)
-limacon_8 = doc.addObject('Part::Feature', 'Limacon_09')
-limacon_8.Shape = bsp_8.toShape()
-
-# Limaçon 10: diameter=8.63", a=2.5891, b=1.7261
-pts_9 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.589130 + 1.726087 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 16.356000 + u * -0.795535
-    py = -49.055945 + u * 0.605907
-    pz = v
-    pts_9.append(FreeCAD.Vector(px, py, pz))
-
-bsp_9 = Part.BSplineCurve()
-bsp_9.interpolate(pts_9)
-limacon_9 = doc.addObject('Part::Feature', 'Limacon_10')
-limacon_9.Shape = bsp_9.toShape()
-
-# Limaçon 11: diameter=8.48", a=2.5435, b=1.6957
-pts_10 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.543478 + 1.695652 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 17.062000 + u * -0.866521
-    py = -48.180123 + u * 0.499141
-    pz = v
-    pts_10.append(FreeCAD.Vector(px, py, pz))
-
-bsp_10 = Part.BSplineCurve()
-bsp_10.interpolate(pts_10)
-limacon_10 = doc.addObject('Part::Feature', 'Limacon_11')
-limacon_10.Shape = bsp_10.toShape()
-
-# Limaçon 12: diameter=8.33", a=2.4978, b=1.6652
-pts_11 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.497826 + 1.665217 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 17.768000 + u * -0.955660
-    py = -46.328159 + u * 0.294471
-    pz = v
-    pts_11.append(FreeCAD.Vector(px, py, pz))
-
-bsp_11 = Part.BSplineCurve()
-bsp_11.interpolate(pts_11)
-limacon_11 = doc.addObject('Part::Feature', 'Limacon_12')
-limacon_11.Shape = bsp_11.toShape()
-
-# Limaçon 13: diameter=8.17", a=2.4522, b=1.6348
-pts_12 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.452174 + 1.634783 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 18.454000 + u * -0.960381
-    py = -44.011808 + u * 0.278690
-    pz = v
-    pts_12.append(FreeCAD.Vector(px, py, pz))
-
-bsp_12 = Part.BSplineCurve()
-bsp_12.interpolate(pts_12)
-limacon_12 = doc.addObject('Part::Feature', 'Limacon_13')
-limacon_12.Shape = bsp_12.toShape()
-
-# Limaçon 14: diameter=8.02", a=2.4065, b=1.6043
-pts_13 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.406522 + 1.604348 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 19.140000 + u * -0.963900
-    py = -41.592182 + u * 0.266263
-    pz = v
-    pts_13.append(FreeCAD.Vector(px, py, pz))
-
-bsp_13 = Part.BSplineCurve()
-bsp_13.interpolate(pts_13)
-limacon_13 = doc.addObject('Part::Feature', 'Limacon_14')
-limacon_13.Shape = bsp_13.toShape()
-
-# Limaçon 15: diameter=7.87", a=2.3609, b=1.5739
-pts_14 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.360870 + 1.573913 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 19.826000 + u * -0.967360
-    py = -39.039931 + u * 0.253407
-    pz = v
-    pts_14.append(FreeCAD.Vector(px, py, pz))
-
-bsp_14 = Part.BSplineCurve()
-bsp_14.interpolate(pts_14)
-limacon_14 = doc.addObject('Part::Feature', 'Limacon_15')
-limacon_14.Shape = bsp_14.toShape()
-
-# Limaçon 16: diameter=7.72", a=2.3152, b=1.5435
-pts_15 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.315217 + 1.543478 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 20.512000 + u * -0.969576
-    py = -36.367230 + u * 0.244789
-    pz = v
-    pts_15.append(FreeCAD.Vector(px, py, pz))
-
-bsp_15 = Part.BSplineCurve()
-bsp_15.interpolate(pts_15)
-limacon_15 = doc.addObject('Part::Feature', 'Limacon_16')
-limacon_15.Shape = bsp_15.toShape()
-
-# Limaçon 17: diameter=7.57", a=2.2696, b=1.5130
-pts_16 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.269565 + 1.513043 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 21.158000 + u * -0.970193
-    py = -33.789197 + u * 0.242332
-    pz = v
-    pts_16.append(FreeCAD.Vector(px, py, pz))
-
-bsp_16 = Part.BSplineCurve()
-bsp_16.interpolate(pts_16)
-limacon_16 = doc.addObject('Part::Feature', 'Limacon_17')
-limacon_16.Shape = bsp_16.toShape()
-
-# Limaçon 18: diameter=7.41", a=2.2239, b=1.4826
-pts_17 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.223913 + 1.482609 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 21.804000 + u * -0.969267
-    py = -31.217690 + u * 0.246012
-    pz = v
-    pts_17.append(FreeCAD.Vector(px, py, pz))
-
-bsp_17 = Part.BSplineCurve()
-bsp_17.interpolate(pts_17)
-limacon_17 = doc.addObject('Part::Feature', 'Limacon_18')
-limacon_17.Shape = bsp_17.toShape()
-
-# Limaçon 19: diameter=7.26", a=2.1783, b=1.4522
-pts_18 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.178261 + 1.452174 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 22.449000 + u * -0.966698
-    py = -28.724126 + u * 0.255918
-    pz = v
-    pts_18.append(FreeCAD.Vector(px, py, pz))
-
-bsp_18 = Part.BSplineCurve()
-bsp_18.interpolate(pts_18)
-limacon_18 = doc.addObject('Part::Feature', 'Limacon_19')
-limacon_18.Shape = bsp_18.toShape()
-
-# Limaçon 20: diameter=7.11", a=2.1326, b=1.4217
-pts_19 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.132609 + 1.421739 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 23.055000 + u * -0.962739
-    py = -26.498560 + u * 0.270432
-    pz = v
-    pts_19.append(FreeCAD.Vector(px, py, pz))
-
-bsp_19 = Part.BSplineCurve()
-bsp_19.interpolate(pts_19)
-limacon_19 = doc.addObject('Part::Feature', 'Limacon_20')
-limacon_19.Shape = bsp_19.toShape()
-
-# Limaçon 21: diameter=6.96", a=2.0870, b=1.3913
-pts_20 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.086957 + 1.391304 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 23.660000 + u * -0.957290
-    py = -24.419147 + u * 0.289129
-    pz = v
-    pts_20.append(FreeCAD.Vector(px, py, pz))
-
-bsp_20 = Part.BSplineCurve()
-bsp_20.interpolate(pts_20)
-limacon_20 = doc.addObject('Part::Feature', 'Limacon_21')
-limacon_20.Shape = bsp_20.toShape()
-
-# Limaçon 22: diameter=6.80", a=2.0413, b=1.3609
-pts_21 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 2.041304 + 1.360870 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 24.265000 + u * -0.950338
-    py = -22.493942 + u * 0.311219
-    pz = v
-    pts_21.append(FreeCAD.Vector(px, py, pz))
-
-bsp_21 = Part.BSplineCurve()
-bsp_21.interpolate(pts_21)
-limacon_21 = doc.addObject('Part::Feature', 'Limacon_22')
-limacon_21.Shape = bsp_21.toShape()
-
-# Limaçon 23: diameter=6.65", a=1.9957, b=1.3304
-pts_22 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.995652 + 1.330435 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 24.871000 + u * -0.941906
-    py = -20.719729 + u * 0.335875
-    pz = v
-    pts_22.append(FreeCAD.Vector(px, py, pz))
-
-bsp_22 = Part.BSplineCurve()
-bsp_22.interpolate(pts_22)
-limacon_22 = doc.addObject('Part::Feature', 'Limacon_23')
-limacon_22.Shape = bsp_22.toShape()
-
-# Limaçon 24: diameter=6.50", a=1.9500, b=1.3000
-pts_23 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.950000 + 1.300000 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 25.476000 + u * -0.932112
-    py = -19.093928 + u * 0.362170
-    pz = v
-    pts_23.append(FreeCAD.Vector(px, py, pz))
-
-bsp_23 = Part.BSplineCurve()
-bsp_23.interpolate(pts_23)
-limacon_23 = doc.addObject('Part::Feature', 'Limacon_24')
-limacon_23.Shape = bsp_23.toShape()
-
-# Limaçon 25: diameter=6.35", a=1.9043, b=1.2696
-pts_24 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.904348 + 1.269565 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 26.081000 + u * -0.921001
-    py = -17.601277 + u * 0.389560
-    pz = v
-    pts_24.append(FreeCAD.Vector(px, py, pz))
-
-bsp_24 = Part.BSplineCurve()
-bsp_24.interpolate(pts_24)
-limacon_24 = doc.addObject('Part::Feature', 'Limacon_25')
-limacon_24.Shape = bsp_24.toShape()
-
-# Limaçon 26: diameter=6.20", a=1.8587, b=1.2391
-pts_25 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.858696 + 1.239130 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 26.686000 + u * -0.908591
-    py = -16.229090 + u * 0.417688
-    pz = v
-    pts_25.append(FreeCAD.Vector(px, py, pz))
-
-bsp_25 = Part.BSplineCurve()
-bsp_25.interpolate(pts_25)
-limacon_25 = doc.addObject('Part::Feature', 'Limacon_26')
-limacon_25.Shape = bsp_25.toShape()
-
-# Limaçon 27: diameter=6.04", a=1.8130, b=1.2087
-pts_26 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.813043 + 1.208696 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 27.251000 + u * -0.895887
-    py = -15.045693 + u * 0.444281
-    pz = v
-    pts_26.append(FreeCAD.Vector(px, py, pz))
-
-bsp_26 = Part.BSplineCurve()
-bsp_26.interpolate(pts_26)
-limacon_26 = doc.addObject('Part::Feature', 'Limacon_27')
-limacon_26.Shape = bsp_26.toShape()
-
-# Limaçon 28: diameter=5.89", a=1.7674, b=1.1783
-pts_27 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.767391 + 1.178261 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 27.816000 + u * -0.882217
-    py = -13.947445 + u * 0.470843
-    pz = v
-    pts_27.append(FreeCAD.Vector(px, py, pz))
-
-bsp_27 = Part.BSplineCurve()
-bsp_27.interpolate(pts_27)
-limacon_27 = doc.addObject('Part::Feature', 'Limacon_28')
-limacon_27.Shape = bsp_27.toShape()
-
-# Limaçon 29: diameter=5.74", a=1.7217, b=1.1478
-pts_28 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.721739 + 1.147826 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 28.381000 + u * -0.867729
-    py = -12.925612 + u * 0.497038
-    pz = v
-    pts_28.append(FreeCAD.Vector(px, py, pz))
-
-bsp_28 = Part.BSplineCurve()
-bsp_28.interpolate(pts_28)
-limacon_28 = doc.addObject('Part::Feature', 'Limacon_29')
-limacon_28.Shape = bsp_28.toShape()
-
-# Limaçon 30: diameter=5.59", a=1.6761, b=1.1174
-pts_29 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.676087 + 1.117391 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 28.946000 + u * -0.852598
-    py = -11.972121 + u * 0.522567
-    pz = v
-    pts_29.append(FreeCAD.Vector(px, py, pz))
-
-bsp_29 = Part.BSplineCurve()
-bsp_29.interpolate(pts_29)
-limacon_29 = doc.addObject('Part::Feature', 'Limacon_30')
-limacon_29.Shape = bsp_29.toShape()
-
-# Limaçon 31: diameter=5.43", a=1.6304, b=1.0870
-pts_30 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.630435 + 1.086957 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 29.511000 + u * -0.837002
-    py = -11.079637 + u * 0.547200
-    pz = v
-    pts_30.append(FreeCAD.Vector(px, py, pz))
-
-bsp_30 = Part.BSplineCurve()
-bsp_30.interpolate(pts_30)
-limacon_30 = doc.addObject('Part::Feature', 'Limacon_31')
-limacon_30.Shape = bsp_30.toShape()
-
-# Limaçon 32: diameter=5.28", a=1.5848, b=1.0565
-pts_31 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.584783 + 1.056522 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 30.076000 + u * -0.821086
-    py = -10.241626 + u * 0.570805
-    pz = v
-    pts_31.append(FreeCAD.Vector(px, py, pz))
-
-bsp_31 = Part.BSplineCurve()
-bsp_31.interpolate(pts_31)
-limacon_31 = doc.addObject('Part::Feature', 'Limacon_32')
-limacon_31.Shape = bsp_31.toShape()
-
-# Limaçon 33: diameter=5.13", a=1.5391, b=1.0261
-pts_32 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.539130 + 1.026087 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 30.641000 + u * -0.804928
-    py = -9.452432 + u * 0.593373
-    pz = v
-    pts_32.append(FreeCAD.Vector(px, py, pz))
-
-bsp_32 = Part.BSplineCurve()
-bsp_32.interpolate(pts_32)
-limacon_32 = doc.addObject('Part::Feature', 'Limacon_33')
-limacon_32.Shape = bsp_32.toShape()
-
-# Limaçon 34: diameter=4.98", a=1.4935, b=0.9957
-pts_33 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.493478 + 0.995652 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 31.166000 + u * -0.789678
-    py = -8.758723 + u * 0.613521
-    pz = v
-    pts_33.append(FreeCAD.Vector(px, py, pz))
-
-bsp_33 = Part.BSplineCurve()
-bsp_33.interpolate(pts_33)
-limacon_33 = doc.addObject('Part::Feature', 'Limacon_34')
-limacon_33.Shape = bsp_33.toShape()
-
-# Limaçon 35: diameter=4.83", a=1.4478, b=0.9652
-pts_34 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.447826 + 0.965217 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 31.690000 + u * -0.774105
-    py = -8.101305 + u * 0.633058
-    pz = v
-    pts_34.append(FreeCAD.Vector(px, py, pz))
-
-bsp_34 = Part.BSplineCurve()
-bsp_34.interpolate(pts_34)
-limacon_34 = doc.addObject('Part::Feature', 'Limacon_35')
-limacon_34.Shape = bsp_34.toShape()
-
-# Limaçon 36: diameter=4.67", a=1.4022, b=0.9348
-pts_35 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.402174 + 0.934783 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 32.215000 + u * -0.757896
-    py = -7.475473 + u * 0.652376
-    pz = v
-    pts_35.append(FreeCAD.Vector(px, py, pz))
-
-bsp_35 = Part.BSplineCurve()
-bsp_35.interpolate(pts_35)
-limacon_35 = doc.addObject('Part::Feature', 'Limacon_36')
-limacon_35.Shape = bsp_35.toShape()
-
-# Limaçon 37: diameter=4.52", a=1.3565, b=0.9043
-pts_36 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.356522 + 0.904348 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 32.740000 + u * -0.740686
-    py = -6.881164 + u * 0.671851
-    pz = v
-    pts_36.append(FreeCAD.Vector(px, py, pz))
-
-bsp_36 = Part.BSplineCurve()
-bsp_36.interpolate(pts_36)
-limacon_36 = doc.addObject('Part::Feature', 'Limacon_37')
-limacon_36.Shape = bsp_36.toShape()
-
-# Limaçon 38: diameter=4.37", a=1.3109, b=0.8739
-pts_37 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.310870 + 0.873913 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 33.264000 + u * -0.722099
-    py = -6.318849 + u * 0.691790
-    pz = v
-    pts_37.append(FreeCAD.Vector(px, py, pz))
-
-bsp_37 = Part.BSplineCurve()
-bsp_37.interpolate(pts_37)
-limacon_37 = doc.addObject('Part::Feature', 'Limacon_38')
-limacon_37.Shape = bsp_37.toShape()
-
-# Limaçon 39: diameter=4.22", a=1.2652, b=0.8435
-pts_38 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.265217 + 0.843478 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 33.789000 + u * -0.701820
-    py = -5.786240 + u * 0.712354
-    pz = v
-    pts_38.append(FreeCAD.Vector(px, py, pz))
-
-bsp_38 = Part.BSplineCurve()
-bsp_38.interpolate(pts_38)
-limacon_38 = doc.addObject('Part::Feature', 'Limacon_39')
-limacon_38.Shape = bsp_38.toShape()
-
-# Limaçon 40: diameter=4.07", a=1.2196, b=0.8130
-pts_39 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.219565 + 0.813043 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 34.313000 + u * -0.679980
-    py = -5.285194 + u * 0.733231
-    pz = v
-    pts_39.append(FreeCAD.Vector(px, py, pz))
-
-bsp_39 = Part.BSplineCurve()
-bsp_39.interpolate(pts_39)
-limacon_39 = doc.addObject('Part::Feature', 'Limacon_40')
-limacon_39.Shape = bsp_39.toShape()
-
-# Limaçon 41: diameter=3.91", a=1.1739, b=0.7826
-pts_40 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.173913 + 0.782609 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 34.838000 + u * -0.656996
-    py = -4.813129 + u * 0.753894
-    pz = v
-    pts_40.append(FreeCAD.Vector(px, py, pz))
-
-bsp_40 = Part.BSplineCurve()
-bsp_40.interpolate(pts_40)
-limacon_40 = doc.addObject('Part::Feature', 'Limacon_41')
-limacon_40.Shape = bsp_40.toShape()
-
-# Limaçon 42: diameter=3.76", a=1.1283, b=0.7522
-pts_41 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.128261 + 0.752174 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 35.363000 + u * -0.634025
-    py = -4.369400 + u * 0.773312
-    pz = v
-    pts_41.append(FreeCAD.Vector(px, py, pz))
-
-bsp_41 = Part.BSplineCurve()
-bsp_41.interpolate(pts_41)
-limacon_41 = doc.addObject('Part::Feature', 'Limacon_42')
-limacon_41.Shape = bsp_41.toShape()
-
-# Limaçon 43: diameter=3.61", a=1.0826, b=0.7217
-pts_42 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.082609 + 0.721739 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 35.887000 + u * -0.612992
-    py = -3.951724 + u * 0.790089
-    pz = v
-    pts_42.append(FreeCAD.Vector(px, py, pz))
-
-bsp_42 = Part.BSplineCurve()
-bsp_42.interpolate(pts_42)
-limacon_42 = doc.addObject('Part::Feature', 'Limacon_43')
-limacon_42.Shape = bsp_42.toShape()
-
-# Limaçon 44: diameter=3.46", a=1.0370, b=0.6913
-pts_43 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 1.036957 + 0.691304 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 36.412000 + u * -0.596526
-    py = -3.553566 + u * 0.802593
-    pz = v
-    pts_43.append(FreeCAD.Vector(px, py, pz))
-
-bsp_43 = Part.BSplineCurve()
-bsp_43.interpolate(pts_43)
-limacon_43 = doc.addObject('Part::Feature', 'Limacon_44')
-limacon_43.Shape = bsp_43.toShape()
-
-# Limaçon 45: diameter=3.30", a=0.9913, b=0.6609
-pts_44 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 0.991304 + 0.660870 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 36.936000 + u * -0.588089
-    py = -3.169166 + u * 0.808797
-    pz = v
-    pts_44.append(FreeCAD.Vector(px, py, pz))
-
-bsp_44 = Part.BSplineCurve()
-bsp_44.interpolate(pts_44)
-limacon_44 = doc.addObject('Part::Feature', 'Limacon_45')
-limacon_44.Shape = bsp_44.toShape()
-
-# Limaçon 46: diameter=3.15", a=0.9457, b=0.6304
-pts_45 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 0.945652 + 0.630435 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 37.461000 + u * -0.591295
-    py = -2.786946 + u * 0.806455
-    pz = v
-    pts_45.append(FreeCAD.Vector(px, py, pz))
-
-bsp_45 = Part.BSplineCurve()
-bsp_45.interpolate(pts_45)
-limacon_45 = doc.addObject('Part::Feature', 'Limacon_46')
-limacon_45.Shape = bsp_45.toShape()
-
-# Limaçon 47: diameter=3.00", a=0.9000, b=0.6000
-pts_46 = []
-for j in range(61):
-    theta = 2 * math.pi * j / 60
-    r = 0.900000 + 0.600000 * math.cos(theta)
-    # u component (along normal in XY) and v component (Z)
-    u = r * math.cos(theta)
-    v = r * math.sin(theta)
-    # Transform to 3D: origin at grommet, u along normal, v along Z
-    px = 37.986000 + u * -0.609230
-    py = -2.394237 + u * 0.792993
-    pz = v
-    pts_46.append(FreeCAD.Vector(px, py, pz))
-
-bsp_46 = Part.BSplineCurve()
-bsp_46.interpolate(pts_46)
-limacon_46 = doc.addObject('Part::Feature', 'Limacon_47')
-limacon_46.Shape = bsp_46.toShape()
-
-# Loft the limaçons into a soundbox surface
 sections = []
-sections.append(Part.Wire([limacon_0.Shape.Edge1]))
-sections.append(Part.Wire([limacon_1.Shape.Edge1]))
-sections.append(Part.Wire([limacon_2.Shape.Edge1]))
-sections.append(Part.Wire([limacon_3.Shape.Edge1]))
-sections.append(Part.Wire([limacon_4.Shape.Edge1]))
-sections.append(Part.Wire([limacon_5.Shape.Edge1]))
-sections.append(Part.Wire([limacon_6.Shape.Edge1]))
-sections.append(Part.Wire([limacon_7.Shape.Edge1]))
-sections.append(Part.Wire([limacon_8.Shape.Edge1]))
-sections.append(Part.Wire([limacon_9.Shape.Edge1]))
-sections.append(Part.Wire([limacon_10.Shape.Edge1]))
-sections.append(Part.Wire([limacon_11.Shape.Edge1]))
-sections.append(Part.Wire([limacon_12.Shape.Edge1]))
-sections.append(Part.Wire([limacon_13.Shape.Edge1]))
-sections.append(Part.Wire([limacon_14.Shape.Edge1]))
-sections.append(Part.Wire([limacon_15.Shape.Edge1]))
-sections.append(Part.Wire([limacon_16.Shape.Edge1]))
-sections.append(Part.Wire([limacon_17.Shape.Edge1]))
-sections.append(Part.Wire([limacon_18.Shape.Edge1]))
-sections.append(Part.Wire([limacon_19.Shape.Edge1]))
-sections.append(Part.Wire([limacon_20.Shape.Edge1]))
-sections.append(Part.Wire([limacon_21.Shape.Edge1]))
-sections.append(Part.Wire([limacon_22.Shape.Edge1]))
-sections.append(Part.Wire([limacon_23.Shape.Edge1]))
-sections.append(Part.Wire([limacon_24.Shape.Edge1]))
-sections.append(Part.Wire([limacon_25.Shape.Edge1]))
-sections.append(Part.Wire([limacon_26.Shape.Edge1]))
-sections.append(Part.Wire([limacon_27.Shape.Edge1]))
-sections.append(Part.Wire([limacon_28.Shape.Edge1]))
-sections.append(Part.Wire([limacon_29.Shape.Edge1]))
-sections.append(Part.Wire([limacon_30.Shape.Edge1]))
-sections.append(Part.Wire([limacon_31.Shape.Edge1]))
-sections.append(Part.Wire([limacon_32.Shape.Edge1]))
-sections.append(Part.Wire([limacon_33.Shape.Edge1]))
-sections.append(Part.Wire([limacon_34.Shape.Edge1]))
-sections.append(Part.Wire([limacon_35.Shape.Edge1]))
-sections.append(Part.Wire([limacon_36.Shape.Edge1]))
-sections.append(Part.Wire([limacon_37.Shape.Edge1]))
-sections.append(Part.Wire([limacon_38.Shape.Edge1]))
-sections.append(Part.Wire([limacon_39.Shape.Edge1]))
-sections.append(Part.Wire([limacon_40.Shape.Edge1]))
-sections.append(Part.Wire([limacon_41.Shape.Edge1]))
-sections.append(Part.Wire([limacon_42.Shape.Edge1]))
-sections.append(Part.Wire([limacon_43.Shape.Edge1]))
-sections.append(Part.Wire([limacon_44.Shape.Edge1]))
-sections.append(Part.Wire([limacon_45.Shape.Edge1]))
-sections.append(Part.Wire([limacon_46.Shape.Edge1]))
+for i, t in enumerate(t_samples):
+    # Soundboard point and tangent
+    origin = sb_eval(t)
+    tng = sb_tangent(t)
 
-loft = Part.makeLoft(sections, True, False)
-soundbox = doc.addObject('Part::Feature', 'Soundbox')
-soundbox.Shape = loft
+    # Find cusp point: closest x on cusp curve
+    ox = float(origin[0])
+    idx = int(np.argmin(np.abs(cusp_x_fine - ox)))
+    cusp_pt = np.array([float(cusp_x_fine[idx]), float(cusp_y_fine[idx])])
+
+    # b = distance from origin to cusp, a = 2b
+    diff = cusp_pt - origin
+    b = float(np.linalg.norm(diff))
+    if b < 1e-6:
+        continue
+    a = 2.0 * b
+
+    # Polar axis direction: from origin toward cusp (in XY plane)
+    polar_dir = diff / b
+
+    # Generate limaçon points in 3D
+    # theta=0 points OPPOSITE cusp (bulge side), theta=pi points toward cusp
+    pts = []
+    for j in range(N_PTS + 1):
+        theta = 2.0 * math.pi * j / N_PTS
+        r = a + b * math.cos(theta)
+        # u along polar axis (but theta=0 is opposite cusp, so negate polar_dir)
+        u = r * math.cos(theta)
+        v = r * math.sin(theta)
+        # In the convention: theta=0 opposite cusp means u-axis = -polar_dir
+        px = float(origin[0]) + u * (-polar_dir[0])
+        py = float(origin[1]) + u * (-polar_dir[1])
+        pz = v
+        pts.append(FreeCAD.Vector(px, py, pz))
+
+    bsp = Part.BSplineCurve()
+    bsp.interpolate(pts)
+    name = f'Limacon_{i+1:02d}'
+    obj = doc.addObject('Part::Feature', name)
+    obj.Shape = bsp.toShape()
+    sections.append(obj)
+
+# Loft all sections into soundbox
+loft = doc.addObject('Part::Loft', 'Soundbox')
+loft.Sections = sections
+loft.Solid = True
+loft.Ruled = False
 
 doc.recompute()
-doc.saveAs('/home/clementsj/projects/clements47/erard_harp.FCStd')
-print('Saved with 47 limaçon sections and lofted soundbox')
-try:
-    FreeCAD.Gui.activeDocument().activeView().fitAll()
-except Exception:
-    pass
+doc.saveAs(SAVE_PATH)
+print(f'Saved {len(sections)} limaçon sections and lofted soundbox to {SAVE_PATH}')

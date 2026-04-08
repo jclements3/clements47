@@ -103,8 +103,9 @@ sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(36.936, 0.0, 0), FreeCAD.Vect
 sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(37.461, 0.0, 0), FreeCAD.Vector(37.7729, 1.4672, 0)))  # Key 46
 sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(37.986, 0.0, 0), FreeCAD.Vector(38.2979, 1.4672, 0)))  # Key 47
 
-# Soundboard B-spline through 7 grommet points - geometry index 94
+# Soundboard B-spline through 9 points: 2" bass extension + 7 grommets + 2" treble extension
 bsp_pts = [
+    FreeCAD.Vector(8.6804, -61.1693, 0),   # bass extension (2" beyond string 1)
     FreeCAD.Vector(10.0, -59.6486, 0),
     FreeCAD.Vector(14.943, -51.8946, 0),
     FreeCAD.Vector(20.512, -36.3672, 0),
@@ -112,6 +113,7 @@ bsp_pts = [
     FreeCAD.Vector(30.076, -10.2416, 0),
     FreeCAD.Vector(34.313, -5.2852, 0),
     FreeCAD.Vector(37.986, -2.3942, 0),
+    FreeCAD.Vector(39.6402, -1.2951, 0),   # treble extension (2" beyond string 47)
 ]
 curve = Part.BSplineCurve()
 curve.interpolate(bsp_pts)
@@ -153,11 +155,11 @@ for i in range(47):
 sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 0, 2, 0.0))
 sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 0, 2, 0.0))
 
-# Constrain all 7 B-spline control points to grommet positions
+# Constrain all 9 B-spline control points (extensions + grommets)
 ctrl_xy = [
-    (10.0, -59.6486), (14.943, -51.8946), (20.512, -36.3672),
-    (25.476, -19.0939), (30.076, -10.2416), (34.313, -5.2852),
-    (37.986, -2.3942),
+    (8.6804, -61.1693), (10.0, -59.6486), (14.943, -51.8946),
+    (20.512, -36.3672), (25.476, -19.0939), (30.076, -10.2416),
+    (34.313, -5.2852), (37.986, -2.3942), (39.6402, -1.2951),
 ]
 for i, (cx, cy) in enumerate(ctrl_xy):
     pt_idx = ctrl_pts[i]
