@@ -31,9 +31,10 @@ Limaçon equation: `r = a + b·cos(θ)` where **a = 2b** (convex, flat on one si
 - Round side (θ=0, r=a+b=3b) hangs BELOW into the resonating chamber
 - Diameter = 2(a+b) = 6b. So b = diameter/6, a = diameter/3
 - Diameter tapers linearly: 10" at string 1 (bass) → 3" at string 47 (treble)
-- Origin of each limaçon is at the string bottom (where string meets soundboard)
+- Polar origin is **shifted by b** along the normal so the flat side (θ=π) lands exactly on the string bottom
 - Each limaçon is perpendicular to the soundboard curve, oriented using normal vectors from the DXF
 - Normals are **negated** from the DXF values so the body extends away from the strings (below the soundboard)
+- Origin shift: `ox = string_x[i] - b*normals_x[i]`, `oy = -string_lengths[i] - b*normals_y[i]`
 
 ## String Data
 
