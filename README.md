@@ -85,7 +85,53 @@ Where `polar_dir` is the unit vector from origin to cusp (so `-polar_dir` points
 | Perpendicular width | 2a = 4b | 12" | 2.67" |
 | Aspect ratio (width:depth) | 6b : 4b | 3:2 | 3:2 |
 
-### 5. Lofting
+### 5. Acoustic Analysis
+
+#### Volume and Helmholtz Resonance
+
+| Property | Clements47 | Lyon & Healy 23 | Salvi Aurora |
+|----------|-----------|-----------------|-------------|
+| Soundbox volume | **66 L** | ~35-40 L | ~35-40 L |
+| Helmholtz frequency | **69 Hz (C2)** | ~90-110 Hz | ~90-110 Hz |
+| Base width | 18" | ~14-16" | ~14-16" |
+| Total tension | 1,466 lbs | ~1,800 lbs | ~1,700 lbs |
+| Cross-section | Limaçon (D-shape) | Round/Oval | Round/Oval |
+| String material | Nylon/Wire | Gut/Wire | Gut/Wire |
+
+#### Volume Distribution
+
+| Region | Volume | Share |
+|--------|--------|-------|
+| Base (0-15") | 1,628 in³ | 40% |
+| Bass (15-30") | 1,127 in³ | 28% |
+| Mid (30-50") | 882 in³ | 22% |
+| Treble (50-65") | 315 in³ | 8% |
+| Neck (65-75") | 97 in³ | 2% |
+
+#### Soundboard Loading
+
+- String angle from soundboard: 34°
+- Vertical load: 820 lbs (56% of tension)
+- Horizontal compression: 1,215 lbs (83% of tension)
+
+#### Tonal Character
+
+- **Warmer and rounder** than modern gut-strung concert harps
+- **Stronger bass** due to ~66L volume (nearly 2x modern harps)
+- **Lower Helmholtz resonance** (69 Hz vs 90-110 Hz) supports lowest strings
+- **D-shape projects directionally** — cusp acts as reflector toward player
+- **Lighter tension** (1,466 lbs) allows thinner, more responsive soundboard
+- Nylon strings: even decay across registers, less sustain than gut
+
+#### Design Recommendations
+
+- **Soundholes**: 2 holes (~3" dia) in the cusp (back), near strings 30-35
+- **Soundboard**: Spruce, ~3mm (thinner than modern 4-5mm due to lower tension)
+- **Bracing**: Minimal — limaçon cusp line provides natural stiffness
+- **Back/ribs**: Maple, steam-bent or laminated to limaçon profile
+- **Optional soundpost**: Bass end, connecting soundboard to cusp (violin-like coupling)
+
+### 6. Lofting
 
 50 limacon cross-sections are sampled evenly along the soundboard curve parameter and lofted into a solid using FreeCAD's `Part::Loft` with `Solid = True, Ruled = False`.
 
