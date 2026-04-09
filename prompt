@@ -1,0 +1,109 @@
+{
+  "task": "Create CadQuery plate() extension for multi-view mechanical drawings",
+  
+  "requirements": {
+    "function_signature": "plate(workplane, UL='XY', LL='XZ', UR='ISO', LR='YZ', width=420, height=297, grid=None, units='mm') -> SVG string",
+    "parameters": {
+      "workplane": "CadQuery Workplane or Assembly object",
+      "UL": "View type for upper-left quadrant: 'XY', 'XZ', 'YZ', 'ISO'",
+      "LL": "View type for lower-left quadrant",
+      "LR": "View type for lower-right quadrant",
+      "UR": "View type for upper-right quadrant",
+      "width": "Plate width in mm (default 420 for A3 landscape)",
+      "height": "Plate height in mm (default 297 for A3 landscape)",
+      "grid": "Engineering grid: None (no grid), 'light' (light grid paper), 'medium', 'heavy'",
+      "units": "'mm' (metric) or 'in' (imperial) - affects grid spacing"
+    },
+    "coordinate_system": "SVG origin at LOWER-LEFT (not upper-left)",
+    "views": {
+      "UL": "Upper-left quadrant",
+      "LL": "Lower-left quadrant", 
+      "LR": "Lower-right quadrant",
+      "UR": "Upper-right quadrant"
+    },
+    "view_types": ["XY", "XZ", "YZ", "ISO"],
+    "alignment": "Orthographic views (XY, XZ, YZ) must use uniform scale and align properly",
+    "output": "Clean technical drawing - NO TEXT anywhere on plate",
+    "grid_specs": {
+      "metric": {
+        "minor": "1mm light gray lines",
+        "major": "10mm darker lines aligned with origin at LL corner"
+      },
+      "imperial": {
+        "minor": "0.1 inch light gray lines",
+        "major": "1.0 inch darker lines aligned with origin at LL corner"
+      },
+      "rendering": "Grid drawn BEFORE geometry so geometry appears on top",
+      "style": {
+        "light": "Very light gray (#f0f0f0) minor lines, light gray (#d0d0d0) major lines",
+        "medium": "Light gray (#e0e0e0) minor lines, medium gray (#b0b0b0) major lines",
+        "heavy": "Medium gray (#d0d0d0) minor lines, dark gray (#909090) major lines"
+      }
+    }
+  },
+  
+  "cadquery_facts": {
+    "installed": "pip install cadquery --break-system-packages",
+    "svg_export": "from cadquery import exporters; exporters.export(workplane, 'file.svg', exportType='SVG')",
+    "svg_structure": "CadQuery SVG has <g transform='scale(X,-X) translate(X,X)'> containing nested <g> with <path> elements",
+    "projections": "CadQuery only exports isometric by default. For orthographic views, rotate the workplane before export",
+    "rotation_method": "workplane.rotateAboutCenter(axis_tuple, degrees)"
+  },
+  
+  "implementation_steps": [
+    "1. For each view type (XY/XZ/YZ/ISO), generate CadQuery SVG",
+    "2. For orthographic views, rotate workplane to get correct projection",
+    "3. Parse each SVG to extract paths and CadQuery's transform",
+    "4. Calculate uniform scale for orthographic views based on object bounding box",
+    "5. Draw engineering grid FIRST if grid parameter is not None",
+    "6. Grid minor lines at 1mm (metric) or 0.1in (imperial) spacing",
+    "7. Grid major lines at 10mm (metric) or 1.0in (imperial) spacing - darker color",
+    "8. Grid origin at lower-left corner (0,0) with major lines passing through origin",
+    "9. Position each view in its quadrant with proper transforms",
+    "10. Flip Y-axis (scale -1) to convert SVG's upper-left origin to lower-left",
+    "11. Combine all into single SVG plate"
+  ],
+  
+  "critical_issues_from_previous_session": [
+    "DO NOT make up fake CadQuery APIs - check actual documentation",
+    "DO NOT use magic numbers for scaling - calculate from SVG dimensions",
+    "Parse paths recursively: use .//svg:path not ./svg:path",
+    "Filter for groups with 'scale' in transform attribute",
+    "Extract view_width and view_height from SVG root element",
+    "Test with ACTUAL harp geometry from /mnt/project/clements47.json, not toy cubes"
+  ],
+  
+  "test_data": {
+    "harp_json": "/mnt/project/clements47.json",
+    "test_geometry": "C strings (c1-c7) as vertical lines from soundboard to tuning pins",
+    "string_positions": "strings[name]['o']['x'] for X, strings[name]['n']['z'] for Z"
+  },
+  
+  "deliverables": [
+    "/mnt/user-data/outputs/cq_plate.py - working addon module",
+    "/mnt/user-data/outputs/harp_plate.svg - test output with C strings, no grid",
+    "/mnt/user-data/outputs/harp_plate_grid_mm.svg - test with metric grid",
+    "/mnt/user-data/outputs/harp_plate_grid_in.svg - test with imperial grid",
+    "Script that shows: from cq_plate import plate; svg = plate(harp_geometry, UL='XY', LL='XZ', UR='ISO', LR='YZ', grid='light', units='mm')"
+  ],
+  
+  "success_criteria": {
+    "svg_shows_content": "All four quadrants contain visible geometry",
+    "views_align": "Top view width = side view width, side view height = front view height",
+    "proper_projections": "XY=top, XZ=side, YZ=front, ISO=isometric",
+    "no_text": "Zero text elements on plate",
+    "origin_correct": "SVG coordinate origin at lower-left corner"
+  },
+  
+  "workflow": [
+    "DO: Install cadquery immediately",
+    "DO: Check actual CadQuery APIs before writing code", 
+    "DO: Test parsing on real CadQuery SVG output",
+    "DO: Use actual harp data from JSON",
+    "DO: Show working code and results",
+    "DON'T: Write code without running it",
+    "DON'T: Make up APIs",
+    "DON'T: Test with cubes - use harp geometry",
+    "DON'T: Write long explanations - show working results"
+  ]
+}
