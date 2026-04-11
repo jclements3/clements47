@@ -1,0 +1,252 @@
+"""Rebuild Clements47.FCStd soundbox using a 9-pt cubic clamped soundboard curve.
+
+Grommets are DERIVED from the smooth curve (not imposed from noisy string_lengths).
+Pins follow from pin_y[i] = curve(x[i]) + string_lengths[i] -- NOT forced to y=0.
+
+The soundboard curve is a cubic spline interpolating through 9 anchor points
+(strings 1, 6, 12, 18, 24, 30, 36, 42, 47) with clamped endpoint tangents derived
+from the local slope of the first/last 5 raw grommets.
+
+70 limacon cross-sections are placed at equal arc length along the curve,
+oriented perpendicular to the local tangent.  Diameter tapers linearly from
+14" (bass) to 4" (treble).  a = 2b limacon ratio.
+
+Run via:
+    echo 'exec(open("fix_soundbox.py").read())' | ~/.local/bin/freecad -c
+"""
+import FreeCAD, Part, math, os
+import numpy as np
+from scipy.interpolate import CubicSpline
+
+DRY_RUN = False   # set True to inspect without saving
+
+PROJECT  = os.path.expanduser("~/projects/clements47")
+DOC_PATH = f"{PROJECT}/Clements47.FCStd"
+MACRO_PATH = f"{PROJECT}/erard_soundbox.FCMacro"
+
+# ---- Immutable inputs (from erard_harp.FCMacro) ----
+STRING_LENGTHS = [
+    59.6486, 58.6226, 57.6990, 56.6390, 55.4580, 54.2660, 53.1225, 51.8946,
+    50.3820, 49.0559, 48.1801, 46.3282, 44.0118, 41.5922, 39.0399, 36.3672,
+    33.7892, 31.2177, 28.7241, 26.4986, 24.4191, 22.4939, 20.7197, 19.0939,
+    17.6013, 16.2291, 15.0457, 13.9474, 12.9256, 11.9721, 11.0796, 10.2416,
+    9.4524,  8.7587,  8.1013,  7.4755,  6.8812,  6.3188,  5.7862,  5.2852,
+    4.8131,  4.3694,  3.9517,  3.5536,  3.1692,  2.7869,  2.3942,
+]
+SPACINGS = [
+    0.706, 0.706, 0.707, 0.706, 0.706, 0.706, 0.706, 0.707, 0.706, 0.706,
+    0.706, 0.686, 0.686, 0.686, 0.686, 0.646, 0.646, 0.645, 0.606, 0.605,
+    0.605, 0.606, 0.605, 0.605, 0.605, 0.565, 0.565, 0.565, 0.565, 0.565,
+    0.565, 0.565, 0.525, 0.524, 0.525, 0.525, 0.524, 0.525, 0.524, 0.525,
+    0.525, 0.524, 0.525, 0.524, 0.525, 0.525,
+]
+
+# 9 anchor strings: 1, 6, 12, 18, 24, 30, 36, 42, 47
+ANCHOR_IDX = [0, 5, 11, 17, 23, 29, 35, 41, 46]
+
+DIA_BASE = 14.0      # inches (limacon diameter at string 1 / bass)
+DIA_NECK = 4.0       # inches (limacon diameter at string 47 / treble)
+N_SECTIONS = 70      # limacon cross-sections
+N_PTS_PER_SECTION = 60
+
+
+def build_soundboard_curve():
+    """Return a scipy CubicSpline representing the soundboard centerline."""
+    xs = [10.0]
+    for s in SPACINGS:
+        xs.append(xs[-1] + s)
+    xs = np.array(xs)
+    ys = np.array([-L for L in STRING_LENGTHS])
+
+    slope_bass   = float(np.polyfit(xs[:5],  ys[:5],  1)[0])
+    slope_treble = float(np.polyfit(xs[-5:], ys[-5:], 1)[0])
+    bc = ((1, slope_bass), (1, slope_treble))
+
+    anchor_x = xs[ANCHOR_IDX]
+    anchor_y = ys[ANCHOR_IDX]
+    cs = CubicSpline(anchor_x, anchor_y, bc_type=bc)
+    return cs, xs, ys, slope_bass, slope_treble
+
+
+def sample_uniform_arc(cs, x0, x1, n):
+    """Sample (x, y, tangent_angle) at n positions of equal arc length along cs."""
+    M = 5000
+    x_dense = np.linspace(x0, x1, M + 1)
+    y_dense = cs(x_dense)
+    dx = np.diff(x_dense)
+    dy = np.diff(y_dense)
+    ds = np.sqrt(dx * dx + dy * dy)
+    cum_s = np.concatenate([[0.0], np.cumsum(ds)])
+    total = float(cum_s[-1])
+
+    targets = np.linspace(0.0, total, n)
+    out = []
+    for t in targets:
+        i = int(np.searchsorted(cum_s, t))
+        if i <= 0:
+            x = float(x_dense[0])
+        elif i >= len(cum_s):
+            x = float(x_dense[-1])
+        else:
+            seg = cum_s[i] - cum_s[i - 1]
+            alpha = (t - cum_s[i - 1]) / seg if seg > 1e-12 else 0.0
+            x = float(x_dense[i - 1] + alpha * (x_dense[i] - x_dense[i - 1]))
+        y = float(cs(x))
+        dydx = float(cs(x, 1))
+        theta = math.atan2(dydx, 1.0)
+        out.append((x, y, theta))
+    return out, total
+
+
+def build_limacon_points(pos, diameter, n_pts):
+    """Return a list of FreeCAD.Vector points for a limacon cross-section.
+
+    a = 2b so r = a + b*cos(t) with a = diameter/3, b = diameter/6.
+    Cross-section lies in the plane spanned by u_dir (perpendicular to
+    tangent in XY) and Z.  u = r*cos(t), v = r*sin(t).
+    """
+    x, y, theta = pos
+    b = diameter / 6.0
+    a = 2.0 * b
+    u_dir_x = -math.sin(theta)
+    u_dir_y =  math.cos(theta)
+    points = []
+    for j in range(n_pts + 1):
+        t = 2.0 * math.pi * j / n_pts
+        r = a + b * math.cos(t)
+        u = r * math.cos(t)
+        v = r * math.sin(t)
+        points.append(FreeCAD.Vector(
+            x + u * u_dir_x,
+            y + u * u_dir_y,
+            v,
+        ))
+    return points
+
+
+def write_macro(positions, macro_path):
+    """Regenerate erard_soundbox.FCMacro so future runs reproduce the same shape."""
+    lines = [
+        "# FreeCAD macro - Erard Harp Soundbox",
+        '# 14.0" base to 4.0" neck, a=2b limacon, 9-pt cubic clamped soundboard curve',
+        "# Pins NOT forced to y=0; grommets derived from smooth curve.",
+        "# Regenerated by fix_soundbox.py",
+        "import FreeCAD, Part, math",
+        "",
+        "doc = FreeCAD.newDocument('ErardHarp')",
+        "N_PTS = 60",
+        "",
+        "sections = []",
+        "",
+    ]
+    for i, (x, y, theta) in enumerate(positions):
+        frac = i / (N_SECTIONS - 1)
+        dia = DIA_BASE + (DIA_NECK - DIA_BASE) * frac
+        b = dia / 6.0
+        a = 2.0 * b
+        u_dir_x = -math.sin(theta)
+        u_dir_y =  math.cos(theta)
+        lines += [
+            f"pts_{i} = []",
+            f"for j in range(N_PTS + 1):",
+            f"    t = 2 * math.pi * j / N_PTS",
+            f"    r = {a:.6f} + {b:.6f} * math.cos(t)",
+            f"    u = r * math.cos(t)",
+            f"    v = r * math.sin(t)",
+            f"    pts_{i}.append(FreeCAD.Vector("
+            f"{x:.6f} + u * ({u_dir_x:.6f}), "
+            f"{y:.6f} + u * ({u_dir_y:.6f}), v))",
+            f"bsp_{i} = Part.BSplineCurve()",
+            f"bsp_{i}.interpolate(pts_{i})",
+            f'obj_{i} = doc.addObject("Part::Feature", "Limacon_{i+1:02d}")',
+            f"obj_{i}.Shape = bsp_{i}.toShape()",
+            f"sections.append(obj_{i})",
+            "",
+        ]
+    lines += [
+        "loft = doc.addObject('Part::Loft', 'Soundbox')",
+        "loft.Sections = sections",
+        "loft.Solid = True",
+        "loft.Ruled = False",
+        "loft.Closed = False",
+        "",
+        "doc.recompute()",
+    ]
+    with open(macro_path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def main():
+    cs, xs, ys, slope_bass, slope_treble = build_soundboard_curve()
+    print(f"9-pt clamped cubic soundboard curve built.")
+    print(f"  bass slope:   {slope_bass:+.4f}  ({math.degrees(math.atan(slope_bass)):+.2f}°)")
+    print(f"  treble slope: {slope_treble:+.4f}  ({math.degrees(math.atan(slope_treble)):+.2f}°)")
+
+    x0, x1 = xs[ANCHOR_IDX[0]], xs[ANCHOR_IDX[-1]]
+    positions, total_arc = sample_uniform_arc(cs, x0, x1, N_SECTIONS)
+    print(f"  Arc length:   {total_arc:.4f} in")
+
+    # Pin deviation sanity check
+    pin_ys = cs(xs) + np.array(STRING_LENGTHS)
+    pin_mean = float(np.mean(pin_ys))
+    pin_rms = float(np.sqrt(np.mean((pin_ys - pin_mean) ** 2)))
+    pin_max = float(np.max(np.abs(pin_ys - pin_mean)))
+    print(f"  Pin deviation RMS: {pin_rms:.4f}\"")
+    print(f"  Pin deviation max: {pin_max:.4f}\"")
+    print(f"  Pin line mean y:   {pin_mean:+.4f}")
+
+    if DRY_RUN:
+        print("\n[DRY RUN] Not modifying Clements47.FCStd")
+        return
+
+    if os.path.exists(DOC_PATH):
+        print(f"\nOpening {DOC_PATH}...")
+        doc = FreeCAD.open(DOC_PATH)
+        # Remove old Soundbox first (depends on limacons), then old limacons
+        if doc.getObject("Soundbox") is not None:
+            doc.removeObject("Soundbox")
+        for i in range(1, N_SECTIONS + 1):
+            name = f"Limacon_{i:02d}"
+            if doc.getObject(name) is not None:
+                doc.removeObject(name)
+        for obj in list(doc.Objects):
+            if obj.Name.startswith("Limacon_"):
+                doc.removeObject(obj.Name)
+    else:
+        print(f"\n{DOC_PATH} does not exist -- creating new document")
+        doc = FreeCAD.newDocument("Clements47")
+        doc.FileName = DOC_PATH
+
+    # Create new limacons
+    new_sections = []
+    for i, pos in enumerate(positions):
+        frac = i / (N_SECTIONS - 1)
+        dia = DIA_BASE + (DIA_NECK - DIA_BASE) * frac
+        pts = build_limacon_points(pos, dia, N_PTS_PER_SECTION)
+        bsp = Part.BSplineCurve()
+        bsp.interpolate(pts)
+        obj = doc.addObject("Part::Feature", f"Limacon_{i+1:02d}")
+        obj.Shape = bsp.toShape()
+        new_sections.append(obj)
+
+    # Create new Soundbox loft
+    loft = doc.addObject("Part::Loft", "Soundbox")
+    loft.Sections = new_sections
+    loft.Solid = True
+    loft.Ruled = False
+    loft.Closed = False
+
+    doc.recompute()
+    if doc.FileName:
+        doc.save()
+    else:
+        doc.saveAs(DOC_PATH)
+    print(f"Saved {DOC_PATH}  ({len(new_sections)} limacons + Soundbox loft)")
+    print(f"  Soundbox valid: {loft.Shape.isValid()}")
+    print(f"  Soundbox volume: {loft.Shape.Volume:.2f} mm^3")
+
+    write_macro(positions, MACRO_PATH)
+    print(f"Rewrote {MACRO_PATH}")
+
+
+main()
