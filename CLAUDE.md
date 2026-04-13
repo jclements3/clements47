@@ -9,12 +9,13 @@ Clements 47-string concert harp CAD model in FreeCAD 1.1. Based on the Erard con
 ## Key Files
 
 ### FreeCAD Models
-- `Clements47.FCStd` — Main model with soundbox + mechanism (448 objects). FreeCAD 1.1+
+- `Clements47.FCStd` — Main model with soundbox + mechanism (577 objects). FreeCAD 1.1+
 - `clements47.FCStd` — Older model with stringband sketch (HarpStringband, String_01-47)
 - `erard_harp.FCStd` — Stringband sketch source
 
 ### Generation Scripts
 - `add_mechanism.py` — Adds discs, strings, axles, prongs, neck to Clements47.FCStd from JSON
+- `add_linkage.py` — Adds bell cranks, linkage rods, action plates to Clements47.FCStd
 - `erard_harp.FCMacro` — Generates stringband sketch, key segments, soundboard B-spline from DXF
 - `erard_soundbox.FCMacro` — Generates 70 limacon cross-sections and lofted soundbox
 
@@ -65,6 +66,23 @@ Clements 47-string concert harp CAD model in FreeCAD 1.1. Based on the Erard con
 
 ### Neck (1 object) — added 2026-04-09
 - **Neck** (Part::Feature): 720x200x250mm hollow box beam, 10mm walls, tilted from bass (z=1429.9) to treble (z=57.2)
+
+### Crank Arms (47 objects) — added 2026-04-12
+- **Crank_C1 through Crank_G7** (Part::Feature): Compound bell cranks at each axle end
+- Boss (cylinder on axle) + natural arm (+Z, 20mm) + sharp arm (+X, 18mm)
+- Pin holes (M3) at arm tips for linkage rod connections
+- 5mm thick, 8mm wide arms
+
+### Linkage Rods (80 objects) — added 2026-04-12
+- **NatRod_*_*** (Part::Feature): Natural chain rods connecting same-note crank natural arms
+- **ShpRod_*_*** (Part::Feature): Sharp chain rods connecting same-note crank sharp arms
+- 3mm diameter steel rods, 40 natural + 40 sharp
+- Connect bass-to-treble within each of 7 notes (C,D,E,F,G,A,B)
+
+### Action Plates (2 objects) — added 2026-04-12
+- **FrontPlate** (Part::Feature): Brass plate at y=+46mm (audience side), 3mm thick
+- **BackPlate** (Part::Feature): Brass plate at y=-49mm (harpist side), 3mm thick
+- Both span full string extent with 15mm margin, drilled for 47 axle bearings
 
 ## Coordinate System
 
