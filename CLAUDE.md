@@ -16,6 +16,8 @@ Clements 47-string concert harp CAD model in FreeCAD 1.1. Based on the Erard con
 ### Generation Scripts
 - `add_mechanism.py` — Adds discs, strings, axles, prongs, neck to Clements47.FCStd from JSON
 - `add_linkage.py` — Adds bell cranks, linkage rods, action plates to Clements47.FCStd
+- `add_missing_parts.py` — Adds bearings, nuts, guide rails, column, tuning pins, pedal rods, rockers
+- `add_remaining_parts.py` — Adds coupling links, pedals, soundboard, grommets, stops, springs
 - `erard_harp.FCMacro` — Generates stringband sketch, key segments, soundboard B-spline from DXF
 - `erard_soundbox.FCMacro` — Generates 70 limacon cross-sections and lofted soundbox
 
@@ -42,7 +44,7 @@ Clements 47-string concert harp CAD model in FreeCAD 1.1. Based on the Erard con
 ### Source Data
 - `erard%20original%20stringband%20tutorial.dxf` — Source DXF with string positions and angles
 
-## Clements47.FCStd Model Structure (448 objects)
+## Clements47.FCStd Model Structure (1015 objects)
 
 ### Soundbox (71 objects)
 - **Limacon_01 through Limacon_70** (Part::Feature): Limacon cross-section curves, `r = a + b*cos(theta)` with `a = 2b`
@@ -84,6 +86,66 @@ Clements 47-string concert harp CAD model in FreeCAD 1.1. Based on the Erard con
 - **BackPlate** (Part::Feature): Brass plate at y=-49mm (harpist side), 3mm thick
 - Both span full string extent with 15mm margin, drilled for 47 axle bearings
 
+### Bearings (94 objects) — added 2026-04-13
+- **BrgF_C1 through BrgF_G7** (Part::Feature): Front (audience) flanged sleeve bearings
+- **BrgB_C1 through BrgB_G7** (Part::Feature): Back (harpist) flanged sleeve bearings
+- OD: 8mm (treble/6904) to 12mm (bass/6008), 6mm width, 1.5mm flange
+
+### Spindle Nuts (94 objects) — added 2026-04-13
+- **NatNut_C1 through NatNut_G7** (Part::Feature): Natural disc locking collars
+- **ShpNut_C1 through ShpNut_G7** (Part::Feature): Sharp disc locking collars
+- 8mm OD, 3mm thick, bored for axle clearance
+
+### Guide Rails (4 objects) — added 2026-04-13
+- **NatRailU / NatRailL** (Part::Feature): Upper/lower natural chain guide rails
+- **ShpRailU / ShpRailL** (Part::Feature): Upper/lower sharp chain guide rails
+- 5mm diameter steel, follow pin line from bass to treble
+
+### Column (1 object) — added 2026-04-13
+- **Column** (Part::Feature): Hollow structural tube, 60mm OD / 50mm ID
+- Position: x=-50mm, from floor (z=0) to neck (z=1430mm)
+
+### Tuning Pins (47 objects) — added 2026-04-13
+- **Pin_C1 through Pin_G7** (Part::Feature): 7mm diameter, 40mm exposed length
+- At pin height (z = string length) extending upward into neck
+
+### Pedal Rods (7 objects) — added 2026-04-13
+- **PedalRod_C through PedalRod_B** (Part::Feature): 4mm diameter steel rods
+- Run inside column from base to neck, one per note, arranged in circle (r=15mm)
+
+### Rocker Levers (7 objects) — added 2026-04-13
+- **Rocker_C through Rocker_B** (Part::Feature): L-shaped input levers
+- At column top, convert vertical pedal rod motion to horizontal linkage motion
+- 30mm arms, 8mm wide, 5mm thick, with pivot boss
+
+### Coupling Links (14 objects) — added 2026-04-13
+- **NatLink_C through NatLink_B** (Part::Feature): Natural chain coupling links
+- **ShpLink_C through ShpLink_B** (Part::Feature): Sharp chain coupling links
+- 3mm rods with clevis ends, connect rockers to first bell crank in each chain
+
+### Pedal Assembly (21 objects) — added 2026-04-13
+- **Pedal_D, Pedal_C, Pedal_B, Pedal_E, Pedal_F, Pedal_G, Pedal_A** (Part::Feature): Foot plates + lever arms + pivot bosses
+- **NotchPlate_*** (Part::Feature): Zigzag detent plates with 3 positions (flat/nat/sharp)
+- **PedalSpring_*** (Part::Feature): Return springs (hollow cylinders)
+- Standard pedal order L-R: D C B | E F G A, 40mm spacing under column
+
+### Soundboard (1 object) — added 2026-04-13
+- **Soundboard** (Part::Feature): 4mm thick flat spruce panel at z=0
+- Spans full string extent with 20mm margin, 100mm wide
+
+### String Grommets (47 objects) — added 2026-04-13
+- **Grommet_C1 through Grommet_G7** (Part::Feature): Brass eyelets at z=0
+- 6mm OD, 2.5mm ID, 3mm thick
+
+### Disc Rotation Stops (94 objects) — added 2026-04-13
+- **NatStop_C1 through NatStop_G7** (Part::Feature): Natural disc stops
+- **ShpStop_C1 through ShpStop_G7** (Part::Feature): Sharp disc stops
+- 4mm steel blocks at ~60 deg from disc edge, limit travel to ~45 deg
+
+### Return Springs (7 objects) — added 2026-04-13
+- **ReturnSpring_C through ReturnSpring_B** (Part::Feature): Torsion springs at rocker pivots
+- 8mm OD hollow cylinders, 10mm length
+
 ## Coordinate System
 
 - X: along the soundboard curve, bass (0mm) to treble (717.4mm)
@@ -116,12 +178,22 @@ Toggle linkage over-center mechanism with dual natural/sharp chains. Each of 7 n
 
 To add mechanism components to Clements47.FCStd:
 ```bash
-echo 'exec(open("add_mechanism.py").read())' | ~/.local/bin/freecad -c
+echo 'exec(open("add_mechanism.py").read())' | ./squashfs-root/usr/bin/freecadcmd
+```
+
+To add linkage (cranks, rods, plates):
+```bash
+echo 'exec(open("add_linkage.py").read())' | ./squashfs-root/usr/bin/freecadcmd
+```
+
+To add missing parts (bearings, nuts, rails, column, pins, pedal rods, rockers):
+```bash
+echo 'exec(open("add_missing_parts.py").read())' | ./squashfs-root/usr/bin/freecadcmd
 ```
 
 To regenerate soundbox from scratch:
 ```bash
-echo 'exec(open("erard_soundbox.FCMacro").read())' | ~/.local/bin/freecad -c
+echo 'exec(open("erard_soundbox.FCMacro").read())' | ./squashfs-root/usr/bin/freecadcmd
 ```
 
 To open in FreeCAD 1.1:
@@ -129,7 +201,7 @@ To open in FreeCAD 1.1:
 ~/.local/bin/freecad ~/projects/clements47/Clements47.FCStd
 ```
 
-## Current Status (2026-04-12)
+## Current Status (2026-04-13)
 
 ### Recent work this session: mechanism reference research + design prep
 
@@ -264,29 +336,56 @@ as mm, the same 14"/4" diameter taper gives ~16-19 L for the pure straight-
 along-X centerline.  Whichever option (A or B) is chosen, the volume will
 need to be recomputed -- the 43L claim may not survive.
 
+### Session 2026-04-13: Added missing mechanism parts + reference images
+
+**Reference images**: Extracted 1,468 frames from ML Harps assembly video
+(`/mnt/c/Users/clementsj/Downloads/images.zip`) into `images/` directory.
+Deduped to 187 unique frames using perceptual hashing (`dedup_images.py`).
+Shows sequential assembly of full pedal harp mechanism in Fusion 360.
+
+**New parts added via `add_missing_parts.py`** (254 new objects, 577->831):
+
+- 94 bearings (BrgF_*/BrgB_*) — flanged sleeve bearings at each action plate hole
+- 94 spindle nuts (NatNut_*/ShpNut_*) — locking collars on axles
+- 4 guide rails (NatRailU/L, ShpRailU/L) — curved 5mm steel rods parallel to chains
+- 1 column (Column) — 60mm OD hollow tube, x=-50mm, floor to neck
+- 47 tuning pins (Pin_*) — 7mm dia, 40mm length at pin height
+- 7 pedal rods (PedalRod_C through PedalRod_B) — 4mm inside column
+- 7 rocker levers (Rocker_C through Rocker_B) — L-shaped at column top
+
+**FreeCAD executable on this machine**: `./squashfs-root/usr/bin/freecadcmd`
+(not `~/.local/bin/freecad` as in older scripts)
+
 ### Other Next Steps (still pending from earlier)
 - Timing diagrams for disc rotation and prong engagement sequences
 - Correct prong tangent geometry visualization (prongs tangent to disc edge, not centered)
 - Three-position comparison visualization (flat/natural/sharp)
 - Force analysis at prong-string contact points
 - Kinematic simulation of toggle linkage action
-- Bell crank and linkage rod CAD models (not yet in FreeCAD)
 - FEA on disc/bell crank stresses
 - CadQuery plate() extension for multi-view engineering drawings (see `prompt` file)
+- **Assembly animation macro** — recreate ML Harps video sequence in FreeCAD
+  (progressively show/hide objects, export frames)
 
-### Not Modeled Yet (see mechanism_references.md for full design specs)
-- Bell cranks (compound bell cranks with ~90 degree arm angles)
-- Linkage rods between bell cranks (tension/compression pairs per Buckwell)
-- Front/back action plates (brass, hold spindle bearings)
-- Pedal rods (steel, inside column)
-- Pedal assembly (7 pedals, springs, zigzag notches)
-- Column/pillar structure
-- Soundboard (flat panel, separate from soundbox body)
-- Disc rotation stops (~45 deg limit)
-- Return springs at rockers/levers
+### All mechanism parts now modeled (1015 objects)
+No remaining unmodeled parts in the mechanical chain from pedal to disc.
 
 ### Key Files Added 2026-04-12
 - `mechanism_references.md` — Synthesized design reference from all sources
 - `erard_grecian_harp.pdf` — Primary historical reference (Poulopoulos 2023)
 - `salvi_technical_manual.pdf` — Modern mechanism reference (Salvi)
 - `camac_technical_manual.pdf` — Disc regulation reference (Camac)
+
+**Additional parts added via `add_remaining_parts.py`** (184 new objects, 831->1015):
+- 14 coupling links (NatLink_*/ShpLink_*) — connect rockers to first bell cranks
+- 21 pedal assembly objects (Pedal_*/NotchPlate_*/PedalSpring_*) — 7 pedals with detents
+- 1 soundboard (Soundboard) — 4mm spruce panel at z=0
+- 47 grommets (Grommet_*) — brass eyelets at soundboard
+- 94 disc rotation stops (NatStop_*/ShpStop_*) — 4mm steel blocks
+- 7 return springs (ReturnSpring_*) — torsion springs at rockers
+
+### Key Files Added 2026-04-13
+- `add_missing_parts.py` — Adds bearings, nuts, rails, column, pins, pedal rods, rockers
+- `add_remaining_parts.py` — Adds coupling links, pedals, soundboard, grommets, stops, springs
+- `dedup_images.py` — Perceptual hash dedup for reference image frames
+- `images/` — 187 deduped reference frames from ML Harps assembly video
