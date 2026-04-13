@@ -33,6 +33,11 @@ Clements 47-string concert harp CAD model in FreeCAD 1.1. Based on the Erard con
 - `lever_positions.py` — Text-based animation of 3 lever positions
 - `lever_animation.py` — Animated pedal cycle visualization
 
+### Mechanism Reference PDFs
+- `erard_grecian_harp.pdf` — Poulopoulos 2023, 319pp, Erard Grecian harp history + mechanism
+- `salvi_technical_manual.pdf` — Salvi official tech manual with mechanism chain diagrams
+- `camac_technical_manual.pdf` — Camac owner's manual with disc regulation + dead point adjustment
+
 ### Source Data
 - `erard%20original%20stringband%20tutorial.dxf` — Source DXF with string positions and angles
 
@@ -106,9 +111,33 @@ To open in FreeCAD 1.1:
 ~/.local/bin/freecad ~/projects/clements47/Clements47.FCStd
 ```
 
-## Current Status (2026-04-10)
+## Current Status (2026-04-12)
 
-### Recent work this session: smoothing the soundboard curve
+### Recent work this session: mechanism reference research + design prep
+
+Downloaded and analyzed three key reference PDFs for designing the missing
+mechanism components (bell cranks, linkage rods, pedal action):
+
+**Reference PDFs added to repo (DO NOT DELETE)**:
+- `erard_grecian_harp.pdf` (51MB) — Poulopoulos 2023, full Erard mechanism history
+- `salvi_technical_manual.pdf` (1.3MB) — Salvi official tech manual with mechanism diagrams
+- `camac_technical_manual.pdf` (1.2MB) — Camac owner's manual with disc regulation details
+
+**Key findings documented in** `mechanism_references.md`:
+- Complete mechanical chain: pedal -> rod -> coupling -> action group -> levers -> spindle -> disc
+- Dead point/dead centre = where natural discs stop and sharp discs start turning
+- Disc rotation: ~45 deg flat->natural, additional ~35 deg natural->sharp
+- Disc attachment: friction cone on spindle, set screw locks
+- Sharp discs use LEFT-HAND threads (natural use right-hand)
+- Treble discs (F7-F0) have only 1 prong due to space constraints
+- Buckwell patent US1332885A maps rocker->link->crank->shaft->disk->fingers
+- Links in tension vs compression have different cross-sections
+- Salvi total string stress: ~1,200 kg for concert grand
+
+**Soundbox alignment issue from 2026-04-10 is STILL OPEN** (Option A vs B).
+User has not chosen yet. See section below for details.
+
+### Previous session (2026-04-10): smoothing the soundboard curve
 The soundbox in `Clements47.FCStd` had a visible kink between strings 10 and
 11 in the limacon loft.  Spent this session diagnosing and fixing the source.
 
@@ -227,9 +256,19 @@ need to be recomputed -- the 43L claim may not survive.
 - FEA on disc/bell crank stresses
 - CadQuery plate() extension for multi-view engineering drawings (see `prompt` file)
 
-### Not Modeled Yet
+### Not Modeled Yet (see mechanism_references.md for full design specs)
 - Bell cranks (compound bell cranks with ~90 degree arm angles)
-- Linkage rods between bell cranks
-- Pedal/lever input mechanism
-- Pillar structure
+- Linkage rods between bell cranks (tension/compression pairs per Buckwell)
+- Front/back action plates (brass, hold spindle bearings)
+- Pedal rods (steel, inside column)
+- Pedal assembly (7 pedals, springs, zigzag notches)
+- Column/pillar structure
 - Soundboard (flat panel, separate from soundbox body)
+- Disc rotation stops (~45 deg limit)
+- Return springs at rockers/levers
+
+### Key Files Added 2026-04-12
+- `mechanism_references.md` — Synthesized design reference from all sources
+- `erard_grecian_harp.pdf` — Primary historical reference (Poulopoulos 2023)
+- `salvi_technical_manual.pdf` — Modern mechanism reference (Salvi)
+- `camac_technical_manual.pdf` — Disc regulation reference (Camac)
