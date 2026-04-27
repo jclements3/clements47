@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Clements 47 — assembly views</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, system-ui, sans-serif;
+    background: #f5f5f4;
+    color: #222;
+    overflow: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+  }
+  h1 { font-size: 15px; margin: 0; display: inline-block; }
+  .hint-line {
+    display: inline-block;
+    margin-left: 12px;
+    color: #666;
+    font-size: 12px;
+  }
+  .grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 1.3fr 0.9fr 0.7fr 0.7fr 1.2fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 6px;
+    padding: 6px;
+    min-height: 0;
+  }
+  .panel {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+  .panel-title {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    background: #fafafa;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title .hint {
+    font-weight: 400;
+    color: #888;
+    font-size: 11px;
+  }
+  .panel.tall { grid-row: 1 / span 2; }
+  .panel.top-row { grid-row: 1; grid-column: 2; }
+  .bottom-split {
+    grid-row: 2;
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    min-height: 0;
+    min-width: 0;
+  }
+  .view-box {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    background: #fff;
+    cursor: grab;
+    position: relative;
+  }
+  .view-box:active { cursor: grabbing; }
+  .view-box svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .panel .reset-btn,
+  .panel .expand-btn {
+    background: #fff;
+    border: 1px solid #888;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 12px;
+    cursor: pointer;
+    color: #222;
+    line-height: 1;
+  }
+  .panel .reset-btn:hover,
+  .panel .expand-btn:hover { background: #eef3fb; border-color: #1060d0; color: #1060d0; }
+  .panel .expand-btn { background: #f0f4fa; }
+
+  .panel.fullscreen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1000;
+    border-radius: 0;
+    border: none;
+    margin: 0;
+  }
+  body.has-fullscreen .panel:not(.fullscreen) { display: none; }
+  body.has-fullscreen header { display: none; }
+
+  @media (max-width: 1300px) {
+    .grid {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    body { overflow: auto; }
+    html, body { height: auto; }
+    .grid { min-height: calc(100vh - 40px); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Clements 47 — orthogonal assembly views</h1>
+  <span class="hint-line">Scroll to zoom, drag to pan. Each view is independent.</span>
+</header>
+
+<div class="grid">
+  <!-- Col 1: Side view, full height -->
+  <div class="panel tall">
+    <div class="panel-title">
+      Side view (xz, project along +y)
+      <button class="expand-btn" data-target="view-side">expand</button>
+      <button class="reset-btn" data-target="view-side">reset</button>
+    </div>
+    <div class="view-box" id="view-side" data-src="clements47_side.svg"></div>
+  </div>
+
+  <!-- Col 2 top: Top view -->
+  <div class="panel top-row">
+    <div class="panel-title">
+      Top view (xy, project along -z)
+      <button class="expand-btn" data-target="view-top">expand</button>
+      <button class="reset-btn" data-target="view-top">reset</button>
+    </div>
+    <div class="view-box" id="view-top" data-src="clements47_top.svg"></div>
+  </div>
+
+  <!-- Col 3: Front view, full height -->
+  <div class="panel tall">
+    <div class="panel-title">
+      Front view (yz, project along +x)
+      <button class="expand-btn" data-target="view-front">expand</button>
+      <button class="reset-btn" data-target="view-front">reset</button>
+    </div>
+    <div class="view-box" id="view-front" data-src="clements47_front.svg"></div>
+  </div>
+
+  <!-- Col 4: Rear view, full height -->
+  <div class="panel tall">
+    <div class="panel-title">
+      Rear view (yz mirrored)
+      <button class="expand-btn" data-target="view-rear">expand</button>
+      <button class="reset-btn" data-target="view-rear">reset</button>
+    </div>
+    <div class="view-box" id="view-rear" data-src="clements47_rear.svg"></div>
+  </div>
+
+  <!-- Col 5: Soundboard-face view, full height -->
+  <div class="panel tall">
+    <div class="panel-title">
+      Soundboard face-on (u, y)
+      <button class="expand-btn" data-target="view-sbf">expand</button>
+      <button class="reset-btn" data-target="view-sbf">reset</button>
+    </div>
+    <div class="view-box" id="view-sbf" data-src="clements47_sbf.svg"></div>
+  </div>
+
+  <!-- Col 2 bottom: TechDraw + harp_profile reference -->
+  <div class="bottom-split">
+    <div class="panel">
+      <div class="panel-title">
+        Reference: harp_profile.svg (from tar)
+        <button class="expand-btn" data-target="view-profile">expand</button>
+        <button class="reset-btn" data-target="view-profile">reset</button>
+      </div>
+      <div class="view-box" id="view-profile" data-src="harp_profile.svg"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">
+        Composite (2x2)
+        <button class="expand-btn" data-target="view-composite">expand</button>
+        <button class="reset-btn" data-target="view-composite">reset</button>
+      </div>
+      <div class="view-box" id="view-composite" data-src="clements47_views.svg"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">
+        TechDraw HLR — assembly
+        <button class="expand-btn" data-target="view-techdraw-full">expand</button>
+        <button class="reset-btn" data-target="view-techdraw-full">reset</button>
+      </div>
+      <div class="view-box" id="view-techdraw-full" data-src="clements47_techdraw.svg"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">
+        TechDraw HLR — neck detail
+        <button class="expand-btn" data-target="view-techdraw-shoulder">expand</button>
+        <button class="reset-btn" data-target="view-techdraw-shoulder">reset</button>
+      </div>
+      <div class="view-box" id="view-techdraw-shoulder" data-src="clements47_shoulder_techdraw.svg"></div>
+    </div>
+  </div>
+</div>
+
+<script src="svg-pan-zoom.min.js"></script>
+<script>
+  const panzoomInstances = {};
+
+  async function loadView(el) {
+    const src = el.dataset.src;
+    try {
+      const resp = await fetch(src);
+      if (!resp.ok) throw new Error(resp.status + ' ' + resp.statusText);
+      let text = await resp.text();
+      text = text.replace(/<\?xml[^?]*\?>/, '');
+      el.innerHTML = text;
+      const svg = el.querySelector('svg');
+      if (!svg) return;
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.setAttribute('width', '100%');
+      svg.setAttribute('height', '100%');
+      try {
+        const bgRects = Array.from(svg.querySelectorAll('rect')).filter(
+          r => (r.getAttribute('fill') || '').toLowerCase() === '#fff' &&
+               r.parentNode === svg);
+        bgRects.forEach(r => r.setAttribute('visibility', 'hidden'));
+        const bb = svg.getBBox();
+        bgRects.forEach(r => r.removeAttribute('visibility'));
+        if (bb && bb.width > 0 && bb.height > 0) {
+          const pad = Math.max(bb.width, bb.height) * 0.03;
+          svg.setAttribute('viewBox',
+            (bb.x - pad) + ' ' + (bb.y - pad) + ' ' +
+            (bb.width + 2*pad) + ' ' + (bb.height + 2*pad));
+        }
+      } catch (e) { /* keep file's viewBox */ }
+
+      const pz = svgPanZoom(svg, {
+        zoomEnabled: true,
+        controlIconsEnabled: false,
+        fit: true,
+        center: true,
+        minZoom: 0.2,
+        maxZoom: 40,
+        zoomScaleSensitivity: 0.3,
+      });
+      panzoomInstances[el.id] = pz;
+    } catch (e) {
+      const isFile = location.protocol === 'file:';
+      const hint = isFile
+        ? 'You opened this file directly (<code>file://</code>); browsers block fetch from disk. '
+          + 'Run <code>python3 -m http.server 8001</code> from the project folder '
+          + 'and open <code>http://localhost:8001/</code> instead.'
+        : 'Served from <code>' + location.origin + '</code> but <code>' + src + '</code> was not found.';
+      el.innerHTML = '<p style="padding:1em;color:#a00;font-size:13px">'
+        + 'Failed to load <code>' + src + '</code>: ' + e.message + '<br>' + hint + '</p>';
+    }
+  }
+
+  document.querySelectorAll('.view-box').forEach(loadView);
+
+  document.querySelectorAll('.reset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pz = panzoomInstances[btn.dataset.target];
+      if (pz) { pz.resetZoom(); pz.center(); pz.fit(); }
+    });
+  });
+
+  function toggleFullscreen(panel) {
+    const entering = !panel.classList.contains('fullscreen');
+    panel.classList.toggle('fullscreen');
+    document.body.classList.toggle('has-fullscreen', entering);
+    const btn = panel.querySelector('.expand-btn');
+    if (btn) btn.textContent = entering ? 'back' : 'expand';
+    const viewBox = panel.querySelector('.view-box');
+    if (viewBox) {
+      const pz = panzoomInstances[viewBox.id];
+      if (pz) setTimeout(() => { pz.resize(); pz.fit(); pz.center(); }, 30);
+    }
+  }
+  document.querySelectorAll('.expand-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const panel = btn.closest('.panel');
+      if (panel) toggleFullscreen(panel);
+    });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const fs = document.querySelector('.panel.fullscreen');
+      if (fs) toggleFullscreen(fs);
+    }
+  });
+</script>
+
+</body>
+</html>
