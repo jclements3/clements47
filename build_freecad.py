@@ -211,34 +211,46 @@ def build_floor_limacon(doc):
 
 
 def build_column(doc):
-    """Column raked -7 deg in x: top edge offset by -h*tan(7) from base."""
-    print(">>> Building column (raked parallelogram) ...")
+    """Column: HOLLOW elliptical CF tube (COL_OD_X x COL_OD_Y, COL_WALL_T
+    wall) raked -7 deg in x.  Loft an outer ellipse and an inner ellipse
+    each at base and top, then subtract inner from outer."""
+    print(">>> Building column (hollow elliptical CF tube) ...")
     F = float(c.compute_S_full()["F"])
     z0 = F
     z1 = float(c.K_KNOTS[0, 1])
     h = z1 - z0
     dx_top = -h * TAN_RAKE
-    y_half = COLUMN_W_Y / 2.0
 
-    base_pts = [
-        Vec(c.COL_X_LEFT,  -y_half, z0),
-        Vec(c.COL_X_RIGHT, -y_half, z0),
-        Vec(c.COL_X_RIGHT,  y_half, z0),
-        Vec(c.COL_X_LEFT,   y_half, z0),
-        Vec(c.COL_X_LEFT,  -y_half, z0),
-    ]
-    top_pts = [
-        Vec(c.COL_X_LEFT  + dx_top, -y_half, z1),
-        Vec(c.COL_X_RIGHT + dx_top, -y_half, z1),
-        Vec(c.COL_X_RIGHT + dx_top,  y_half, z1),
-        Vec(c.COL_X_LEFT  + dx_top,  y_half, z1),
-        Vec(c.COL_X_LEFT  + dx_top, -y_half, z1),
-    ]
-    base = Part.makePolygon(base_pts)
-    top  = Part.makePolygon(top_pts)
-    loft = Part.makeLoft([base, top], True, False, False)
+    a_out = c.COL_OD_X / 2.0
+    b_out = c.COL_OD_Y / 2.0
+    a_in  = a_out - c.COL_WALL_T
+    b_in  = b_out - c.COL_WALL_T
+
+    cx0 = (c.COL_X_LEFT + c.COL_X_RIGHT) / 2.0
+    cx1 = cx0 + dx_top
+
+    def ell_face(cx, z, a, b):
+        """Ellipse wire centered at (cx, 0, z) in the xy plane.  Sample
+        parametrically and stitch as a polygon (Part.Ellipse is finicky
+        about which axis is "major"; this is bullet-proof)."""
+        n = 96
+        pts = []
+        for i in range(n):
+            t = 2.0 * 3.141592653589793 * i / n
+            pts.append(Vec(cx + a * np.cos(t), b * np.sin(t), z))
+        pts.append(pts[0])
+        return Part.makePolygon(pts)
+
+    out_base = ell_face(cx0, z0, a_out, b_out)
+    out_top  = ell_face(cx1, z1, a_out, b_out)
+    in_base  = ell_face(cx0, z0, a_in,  b_in)
+    in_top   = ell_face(cx1, z1, a_in,  b_in)
+
+    outer = Part.makeLoft([out_base, out_top], True, True, False)
+    inner = Part.makeLoft([in_base,  in_top],  True, True, False)
+    tube = outer.cut(inner)
     obj = doc.addObject("Part::Feature", "Column")
-    obj.Shape = loft
+    obj.Shape = tube
     return obj
 
 

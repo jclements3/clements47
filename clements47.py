@@ -72,9 +72,15 @@ FLOOR_EXTENSION = 0.0  # B_floor coincides with floor_end (below B1 at x=466.95)
 # Column footprint. Scaled by csv ratio (643.29/735.29 = 0.8748) so K1, K9
 # (column corners) line up with the column LEFT face after the SB Bezier
 # was rescaled to fit strings.csv.
-COL_X_LEFT = -15.75          # = old COL_X_RIGHT (column shifted +col_width to land C1 on floor)
-COL_X_RIGHT = 12.24          # = old COL_X_RIGHT + col_width
-COL_TOP_Z = 1690.42  # column shrunk: top edge now at C1f.z (was 1600 + Z_OFFSET = 1786.78)
+COL_X_LEFT = -17.755         # column bottom-outer x (= center - COL_OD_X/2)
+COL_X_RIGHT = 14.245         # column bottom-inner x (= center + COL_OD_X/2)
+COL_TOP_Z = 1690.42          # column top z (= C1f.z, was 1600 + Z_OFFSET = 1786.78)
+# Elliptical CF column cross-section (replaces the old 28x32 mm rectangle).
+# OD chosen for SF >= 3 in Euler buckling under 7079 N axial load with
+# K=0.7 clamped base.
+COL_OD_X = 32.0              # mm; column outer diameter in x (chord plane)
+COL_OD_Y = 36.0              # mm; column outer diameter in y (depth)
+COL_WALL_T = 4.0             # mm; CF wall thickness (hollow tube)
 
 # Neck knots N0..N9 — AT-REST frame (xz, CCW from column outer top, then
 # inward across the column top, down through the inner face, around the
@@ -107,9 +113,9 @@ COL_TOP_Z = 1690.42  # column shrunk: top edge now at C1f.z (was 1600 + Z_OFFSET
 # K1, K9 already encode the -7 deg rake from the column LEFT face; K6 is
 # anchored to SBN on the un-raked soundboard so it doesn't shift further.
 N_KNOTS = np.array([
-    [-223.34,  1690.42],  # N0 = K1  - column outer top, raked 7 deg from COL_X_LEFT to z=C1f
-    [-195.35,  1690.42],  # N1 = K10 - column inner top = N0 + (col_w, 0)
-    [-171.55,  1494.49],  # N2 = K9  - slid DOWN 2*AIR_GAP along column inner face from prior
+    [-225.34,  1690.42],  # N0 = K1  - column outer top, raked 7 deg from COL_X_LEFT to z=C1f
+    [-193.34,  1690.42],  # N1 = K10 - column inner top = N0 + (COL_OD_X, 0)
+    [-169.54,  1494.49],  # N2 = K9  - slid DOWN 2*AIR_GAP along column inner face from prior
     [ 265.05,  1562.88],  # N3 = K8  - re-optimized (Nelder-Mead)
     [ 596.29,  1668.12],  # N4 = K7  - re-optimized
     [ 660.42,  1683.34],  # N5 = K6 = St (top of S; G7g + 2*AIR_GAP*tan1_unit)

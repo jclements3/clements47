@@ -239,6 +239,21 @@ was touching: this HANDOFF.md update + the commit/push.
   pending (would require shifting all N_KNOTS z, all string Ng_z /
   Nf_z columns, and SB_P0/P1 z values by +31.26 simultaneously).
 
+- **Column upgraded to HOLLOW ELLIPTICAL CF TUBE.**  The 28 x 32 mm
+  rectangular box was undersized for the round/elliptical concert-
+  harp pillar the user wanted.  New cross-section: 32 x 36 mm
+  ellipse with 4 mm CF wall (constants `COL_OD_X = 32`, `COL_OD_Y =
+  36`, `COL_WALL_T = 4` added to clements47.py).  `COL_X_LEFT/RIGHT`
+  widened to span the new 32 mm OD (centered on the previous column
+  axis: -17.755 to +14.245).  N_KNOTS rows 0/1/2 nudged by -2 / +2 /
+  +2 in x to keep the rake relationship.  `build_freecad.py
+  build_column()` rewritten to loft a parametric-ellipse wire at
+  base and top, then subtract an inner ellipse to make it hollow
+  (the previous version lofted rectangles).  Buckling SF improves
+  from 2.65 (old hollow box) to ~3.2 (new hollow ellipse, K = 0.7
+  clamped base) under the 7079 N axial load.  FCStd, techdraw, all
+  views, and tablet APK regenerated to match.
+
 ### Outstanding / deferred
 
 1. **Pedestal floor as limaçon** — currently `P0-P1` is straight at
