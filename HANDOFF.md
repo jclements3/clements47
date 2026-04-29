@@ -230,12 +230,14 @@ was touching: this HANDOFF.md update + the commit/push.
   (was `1.3fr 0.9fr 0.7fr 0.7fr 1.2fr`).
 - **Auto-fullscreen-on-load disabled** -- the desktop's auto-FS was
   racing with SVG fetch on the WebView and showing a blank panel.
-- **Whole harp shifted to z >= 0**: changed
-  `PEDESTAL_FLOOR_Z = -70.65 -> -39.3948` so floor_z_ped lands at
-  exactly 0.  Pedestal lower edge (P0/P1) and column lower edge
-  (C0/C1) are now at z = 0 instead of z = -31.26.  The pedestal is
-  ~31 mm shorter; everything else is unchanged.  All other harp
-  parts (B0/B1/B2/B3, strings, neck) were already above z = 0.
+- **Attempted z >= 0 shift (REVERTED)**: tried changing
+  `PEDESTAL_FLOOR_Z = -70.65 -> -39.3948`.  This shortened the
+  pedestal by ~31 mm instead of shifting the harp UP, which the
+  user did NOT want -- they want the FULL pedestal preserved with
+  the entire harp lifted by 31.26.  Reverted to -70.65; pedestal
+  floor is back at z = -31.26.  Proper "lift the whole harp" still
+  pending (would require shifting all N_KNOTS z, all string Ng_z /
+  Nf_z columns, and SB_P0/P1 z values by +31.26 simultaneously).
 
 ### Outstanding / deferred
 
