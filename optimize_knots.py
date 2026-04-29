@@ -196,6 +196,11 @@ def main():
         K8 = np.array([x[10], x[11]])
         return np.array([K1, K2, K3, K4, K5, K6, K7, K8, K9])
 
+    # Anchor box around the canonical knot positions to prevent the
+    # optimiser from wandering off into self-intersecting geometry.
+    x0_anchor = x0.copy()
+    BOX_HALF = 100.0  # mm: each free coord is allowed to roam +/- 100 mm
+
     def objective(x):
         K = assemble_K(x)
         try:
@@ -209,9 +214,9 @@ def main():
             dx = poly[:, 0] - b["x"]; dz = poly[:, 1] - b["z"]
             min_d = float(np.sqrt(dx * dx + dz * dz).min())
             if not inside_:
-                total += 1000.0 + 100.0 * (CLEARANCE - min_d) ** 2 if min_d < CLEARANCE else 1000.0 * min_d
+                total += 5000.0 + 1000.0 * (CLEARANCE - min_d) ** 2 if min_d < CLEARANCE else 5000.0 * min_d
             elif min_d < CLEARANCE:
-                total += 50.0 * (CLEARANCE - min_d) ** 2
+                total += 500.0 * (CLEARANCE - min_d) ** 2
         # smoothness: penalise large angles between consecutive K knot vectors
         for i in range(1, 9):
             v1 = K[i] - K[i - 1]
@@ -219,13 +224,31 @@ def main():
             n1 = np.linalg.norm(v1); n2 = np.linalg.norm(v2)
             if n1 > 0 and n2 > 0:
                 cosang = float(v1.dot(v2) / (n1 * n2))
-                # penalise sharp folds (cosang << 1)
-                total += max(0.0, 1.0 - cosang) * 20.0
+                total += max(0.0, 1.0 - cosang) * 200.0  # was 20.0
+
+        # K4 / K5 separation: K5 (shoulder) must sit OUTBOARD of K4 (top-arc
+        # treble end) -- K5.x >= K4.x + 30, K5.z <= K4.z - 30.
+        K4 = K[3]; K5 = K[4]
+        sep_x_short = max(0.0, (K4[0] + 30.0) - K5[0])     # want K5.x >= K4.x+30
+        sep_z_short = max(0.0, K5[1] - (K4[1] - 30.0))     # want K5.z <= K4.z-30
+        total += 50.0 * (sep_x_short ** 2 + sep_z_short ** 2)  # was 200.0
+        # Also: K5 should be reasonably close to K4 (not drift off into space)
+        d45 = float(np.linalg.norm(K5 - K4))
+        if d45 > 200:
+            total += (d45 - 200) ** 2
+
+        # Anchor regularisation: hard wall outside +/- BOX_HALF from x0_anchor.
+        # No in-box pull -- let optimiser explore freely inside the box.
+        for j, (xj, x0j) in enumerate(zip(x, x0_anchor)):
+            d = abs(xj - x0j)
+            if d > BOX_HALF:
+                total += 1000.0 * (d - BOX_HALF) ** 2
+
         return total
 
     print("starting optimisation ...")
     res = minimize(objective, x0, method="Nelder-Mead",
-                   options={"xatol": 0.5, "fatol": 0.01, "maxiter": 8000,
+                   options={"xatol": 0.1, "fatol": 0.001, "maxiter": 20000,
                             "adaptive": True, "disp": True})
     print(f"\nfinal objective: {res.fun:.3f}")
     K = assemble_K(res.x)

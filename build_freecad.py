@@ -287,6 +287,33 @@ def build_strings(doc):
     return None
 
 
+def make_scoop(doc, scoop):
+    """Stub: place a marker for the future parabolic-scoop boolean cut.
+
+    For now this just drops a thin Part::Sphere at the rim centre as a
+    visual placeholder. A future pass should:
+
+      1. Build a Part::Surface of revolution about scoop['axis_unit']
+         (passing through scoop['rim_center_xz'] in xz, full +/- y revolve)
+         using the parabola z = u**2 / (4 * scoop['paraboloid_focal']) for
+         u in [0, scoop['rim_radius']], where u is radial distance from
+         the axis and z is depth into the chamber along axis_unit.
+      2. Boolean-cut (Part::Cut) that surface (closed by a rim cap) out of
+         the Chamber loft to form the dish.
+
+    TODO: wire the boolean cut once the chamber loft is itself a single
+    closed solid. Focal length f = R^2 / (4 * depth) =
+    {scoop['paraboloid_focal']} mm with R = {scoop['rim_radius']} mm and
+    depth = {scoop['depth']} mm.
+    """
+    rc = scoop["rim_center_xz"]
+    # Place a small placeholder sphere at the rim center (xz; y=0).
+    sphere = Part.makeSphere(8.0, Vec(float(rc[0]), 0.0, float(rc[1])))
+    obj = doc.addObject("Part::Feature", "ScoopMarker")
+    obj.Shape = sphere
+    return obj
+
+
 def main():
     if not HAS_FC:
         print("FreeCAD not available; nothing to do.", file=sys.stderr)

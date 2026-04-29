@@ -52,20 +52,20 @@
   }
   .panel-title {
     flex: 0 0 auto;
-    padding: 4px 8px;
+    padding: 12px 18px;
     background: #fafafa;
     border-bottom: 1px solid #eee;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 64px;
+    font-weight: 700;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
   }
   .panel-title .hint {
     font-weight: 400;
     color: #888;
-    font-size: 11px;
+    font-size: 16px;
   }
   .panel.tall { grid-row: 1 / span 2; }
   .panel.top-row { grid-row: 1; grid-column: 2; }
@@ -95,11 +95,11 @@
   .panel .reset-btn,
   .panel .expand-btn {
     background: #fff;
-    border: 1px solid #888;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 4px 12px;
+    border: 2px solid #888;
+    border-radius: 8px;
+    font-size: 50px;
+    font-weight: 700;
+    padding: 27px 59px;
     cursor: pointer;
     color: #222;
     line-height: 1;
@@ -188,40 +188,14 @@
     <div class="view-box" id="view-sbf" data-src="clements47_sbf.svg"></div>
   </div>
 
-  <!-- Col 2 bottom: TechDraw + harp_profile reference -->
-  <div class="bottom-split">
-    <div class="panel">
-      <div class="panel-title">
-        Reference: harp_profile.svg (from tar)
-        <button class="expand-btn" data-target="view-profile">expand</button>
-        <button class="reset-btn" data-target="view-profile">reset</button>
-      </div>
-      <div class="view-box" id="view-profile" data-src="harp_profile.svg"></div>
+  <!-- Col 2 bottom: 3D levers reference -->
+  <div class="panel top-row" style="grid-row: 2; grid-column: 2;">
+    <div class="panel-title">
+      3D levers (Josephus, 5 sizes)
+      <button class="expand-btn" data-target="view-levers">expand</button>
+      <button class="reset-btn" data-target="view-levers">reset</button>
     </div>
-    <div class="panel">
-      <div class="panel-title">
-        Composite (2x2)
-        <button class="expand-btn" data-target="view-composite">expand</button>
-        <button class="reset-btn" data-target="view-composite">reset</button>
-      </div>
-      <div class="view-box" id="view-composite" data-src="clements47_views.svg"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-title">
-        TechDraw HLR — assembly
-        <button class="expand-btn" data-target="view-techdraw-full">expand</button>
-        <button class="reset-btn" data-target="view-techdraw-full">reset</button>
-      </div>
-      <div class="view-box" id="view-techdraw-full" data-src="clements47_techdraw.svg"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-title">
-        TechDraw HLR — neck detail
-        <button class="expand-btn" data-target="view-techdraw-shoulder">expand</button>
-        <button class="reset-btn" data-target="view-techdraw-shoulder">reset</button>
-      </div>
-      <div class="view-box" id="view-techdraw-shoulder" data-src="clements47_shoulder_techdraw.svg"></div>
-    </div>
+    <div class="view-box" id="view-levers" data-src="lever_3d.svg"></div>
   </div>
 </div>
 
@@ -306,6 +280,12 @@
       const panel = btn.closest('.panel');
       if (panel) toggleFullscreen(panel);
     });
+  });
+
+  // Default view: side view fullscreen on load. Click "back" to see all panels.
+  window.addEventListener('load', () => {
+    const sidePanel = document.getElementById('view-side').closest('.panel');
+    if (sidePanel) setTimeout(() => toggleFullscreen(sidePanel), 200);
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
