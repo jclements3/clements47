@@ -1564,36 +1564,42 @@ def sbf_view_content(strings):
 
     elems = []
 
-    # Chamber silhouette in (u, y) plane
+    # Chamber silhouette in (u, y) plane.  Rotate 90 deg so u is VERTICAL
+    # with BASS at the bottom and TREBLE at the top (matches the view from
+    # C0 looking face-on at the soundboard).  Use y = +s; the global
+    # scale(1,-1) g transform flips it to put small-s (bass) at bottom.
     u_top, u_bot = [], []
     for st in sts:
         v = st["pts3d"][:, 1]
-        u_top.append((st["s"], v.max()))
-        u_bot.append((st["s"], v.min()))
+        u_top.append((v.max(), st["s"]))
+        u_bot.append((v.min(), st["s"]))
     sil = u_top + u_bot[::-1] + [u_top[0]]
     elems.append(f'<path d="{polyline_d(sil)}" '
                  f'fill="{PAL["chamber_fill"]}" fill-opacity="0.7" '
                  f'stroke="{PAL["chamber_edge"]}" stroke-width="1.5"/>')
 
-    # Centerline (grommet line at y=0)
-    elems.append(f'<line x1="{u_top[0][0]:.2f}" y1="0" '
-                 f'x2="{u_top[-1][0]:.2f}" y2="0" '
+    # Centerline (grommet line at v=0, same y-convention as silhouette)
+    elems.append(f'<line x1="0" y1="{u_top[0][1]:.2f}" '
+                 f'x2="0" y2="{u_top[-1][1]:.2f}" '
                  f'stroke="{PAL["soundboard"]}" stroke-width="1.0"/>')
 
-    # Grommets coloured by note, located at u along S, y=0
+    # Grommets coloured by note: at v=0, vertical position = +s
     for s in strings:
         gx = s["g"][0]
         if gx < x_samples[0] or gx > x_samples[-1]:
             continue
         u = float(np.interp(gx, x_samples, s_samples))
-        elems.append(f'<circle cx="{u:.2f}" cy="0" r="0.9" '
+        elems.append(f'<circle cx="0" cy="{u:.2f}" r="0.9" '
                      f'fill="{string_colour(s["note"])}"/>')
 
-    u_min = min(p[0] for p in u_top) - 40
-    u_max = max(p[0] for p in u_top) + 40
-    v_min = min(p[1] for p in u_bot) - 40
-    v_max = max(p[1] for p in u_top) + 40
-    return elems, (u_min, -v_max, u_max - u_min, v_max - v_min)
+    # ViewBox after rotation: x is v (chamber width), y is +s (chamber length).
+    # The global scale(1,-1) g transform flips data to negative; viewBox is
+    # set in PRE-transform coords (positive s range).
+    v_lo = min(p[0] for p in u_bot) - 40
+    v_hi = max(p[0] for p in u_top) + 40
+    s_lo_vb = min(p[1] for p in u_top) - 40
+    s_hi_vb = max(p[1] for p in u_top) + 40
+    return elems, (v_lo, -s_hi_vb, v_hi - v_lo, s_hi_vb - s_lo_vb)
 
 
 # ---------------------------------------------------------------------------

@@ -139,7 +139,9 @@ CLEARANCE = 8.0
 D_KNOT_FLOOR = 343.56                                          # D at SF -- shortened so the arc from B2 to floor (centered at the
                                                                 # B1-B2 ∩ P0-P1 intersection) lands EXACTLY at P1.
 PEDESTAL_TOP_Z   = -20.65    # mm; top of the pedestal (BEFORE sliding).
-PEDESTAL_FLOOR_Z = -70.65    # mm; bottom of the pedestal (BEFORE sliding).
+PEDESTAL_FLOOR_Z = -39.3948  # mm; bottom of the pedestal (BEFORE sliding).
+                              # Tuned so floor_z_ped = PEDESTAL_FLOOR_Z +
+                              # slide.z = 0 (entire harp lands at z >= 0).
 PEDESTAL_LEFT_X  = -69.74    # mm; pedestal P0 x (BEFORE sliding).
 PEDESTAL_FLOOR_LENGTH = 380.0  # mm; |P0-P1| floor base of pedestal -- FIXED
                                 # constant. 380 mm ~= 15 in, in line with
