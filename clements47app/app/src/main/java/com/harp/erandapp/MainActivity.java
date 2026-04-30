@@ -3,6 +3,9 @@ package com.harp.erandapp;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.WindowManager;
+import android.util.Log;
+import android.webkit.ConsoleMessage;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -43,6 +46,14 @@ public class MainActivity extends Activity {
             public WebResourceResponse shouldInterceptRequest(
                     WebView view, WebResourceRequest request) {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+        });
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage cm) {
+                Log.i("WebViewConsole", cm.message() + " (" + cm.sourceId() + ":" + cm.lineNumber() + ")");
+                return true;
             }
         });
 

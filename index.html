@@ -52,13 +52,14 @@
   }
   .panel-title {
     flex: 0 0 auto;
-    padding: 12px 18px;
+    padding: 6px 10px;
     background: #fafafa;
     border-bottom: 1px solid #eee;
-    font-size: 64px;
+    font-size: 18px;
     font-weight: 700;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     align-items: center;
     gap: 16px;
   }
@@ -95,11 +96,11 @@
   .panel .reset-btn,
   .panel .expand-btn {
     background: #fff;
-    border: 2px solid #888;
-    border-radius: 8px;
-    font-size: 50px;
-    font-weight: 700;
-    padding: 27px 59px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
     cursor: pointer;
     color: #222;
     line-height: 1;
@@ -201,14 +202,19 @@
 
 <script src="svg-pan-zoom.min.js"></script>
 <script>
+  console.log('[BOOT] index.html script start, location=', location.href);
+  window.addEventListener('error', e => console.error('[ERR]', e.message, e.filename, e.lineno));
   const panzoomInstances = {};
 
   async function loadView(el) {
     const src = el.dataset.src;
+    console.log('[loadView] start', el.id, src);
     try {
       const resp = await fetch(src);
+      console.log('[loadView] fetch ok', el.id, src, resp.status);
       if (!resp.ok) throw new Error(resp.status + ' ' + resp.statusText);
       let text = await resp.text();
+      console.log('[loadView] text len', el.id, text.length);
       text = text.replace(/<\?xml[^?]*\?>/, '');
       el.innerHTML = text;
       const svg = el.querySelector('svg');
@@ -224,25 +230,23 @@
         bgRects.forEach(r => r.setAttribute('visibility', 'hidden'));
         const bb = svg.getBBox();
         bgRects.forEach(r => r.removeAttribute('visibility'));
+        console.log('[loadView] bbox', el.id, bb && {x:bb.x,y:bb.y,w:bb.width,h:bb.height});
         if (bb && bb.width > 0 && bb.height > 0) {
           const pad = Math.max(bb.width, bb.height) * 0.03;
           svg.setAttribute('viewBox',
             (bb.x - pad) + ' ' + (bb.y - pad) + ' ' +
             (bb.width + 2*pad) + ' ' + (bb.height + 2*pad));
         }
-      } catch (e) { /* keep file's viewBox */ }
+      } catch (e) { console.error('[loadView] bbox err', el.id, e.message); }
+      const cs = window.getComputedStyle(el);
+      console.log('[loadView] view-box dims', el.id, cs.width, cs.height);
 
-      const pz = svgPanZoom(svg, {
-        zoomEnabled: true,
-        controlIconsEnabled: false,
-        fit: true,
-        center: true,
-        minZoom: 0.2,
-        maxZoom: 40,
-        zoomScaleSensitivity: 0.3,
-      });
-      panzoomInstances[el.id] = pz;
+      // Skip svgPanZoom on initial load -- it gets initialized lazily on
+      // first fullscreen toggle (when the view-box has stable dimensions).
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      console.log('[loadView] DONE (no svgPanZoom on init)', el.id);
     } catch (e) {
+      console.error('[loadView] ERR', el.id, src, e.message);
       const isFile = location.protocol === 'file:';
       const hint = isFile
         ? 'You opened this file directly (<code>file://</code>); browsers block fetch from disk. '
@@ -254,7 +258,15 @@
     }
   }
 
-  document.querySelectorAll('.view-box').forEach(loadView);
+  // Defer loadView until after window.load + an animation frame so the
+  // grid layout is fully resolved.  Without this, the first 1-2 panels
+  // get computed-style dimensions of 0 and svgPanZoom initializes blind,
+  // never recovering when the panel later goes fullscreen.
+  window.addEventListener('load', () => {
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.view-box').forEach(loadView);
+    });
+  });
 
   document.querySelectorAll('.reset-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -270,9 +282,33 @@
     const btn = panel.querySelector('.expand-btn');
     if (btn) btn.textContent = entering ? 'back' : 'expand';
     const viewBox = panel.querySelector('.view-box');
+    console.log('[toggleFS]', viewBox && viewBox.id, 'entering=', entering);
     if (viewBox) {
-      const pz = panzoomInstances[viewBox.id];
-      if (pz) setTimeout(() => { pz.resize(); pz.fit(); pz.center(); }, 30);
+      const oldPz = panzoomInstances[viewBox.id];
+      if (oldPz) {
+        try { oldPz.destroy(); } catch (e) {}
+        delete panzoomInstances[viewBox.id];
+      }
+      // Two RAFs: one for layout/paint after class toggle, one to ensure
+      // dimensions are stable before svgPanZoom re-init.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const cs = window.getComputedStyle(viewBox);
+        console.log('[toggleFS] view-box dims after fullscreen', viewBox.id, cs.width, cs.height);
+        const svg = viewBox.querySelector('svg');
+        if (!svg) { console.error('[toggleFS] no svg in', viewBox.id); return; }
+        // Reset SVG to fit 100% of container then re-init svgPanZoom.
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        const pz = svgPanZoom(svg, {
+          zoomEnabled: true, controlIconsEnabled: false,
+          fit: true, center: true,
+          minZoom: 0.2, maxZoom: 40, zoomScaleSensitivity: 0.3,
+        });
+        panzoomInstances[viewBox.id] = pz;
+        console.log('[toggleFS] re-init svgPanZoom done', viewBox.id);
+      }));
     }
   }
   document.querySelectorAll('.expand-btn').forEach(btn => {

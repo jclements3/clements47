@@ -493,3 +493,126 @@ regenerated and copied to `Erand/`.
    pressure node at chamber midpoint s=1000 -- now well clear of all
    five soundholes after #3 was moved s=1078 -> s=1150.
 
+---
+
+## Session 2026-04-29 (continued): physical dimensions, lift to z>=0, tablet move
+
+### Real-harp dimensions applied
+User measured their physical reference harp and asked the design to match:
+- **20" pear-soundboard width** (nominal at SBB)
+- **16" floor base** (limaçon D at floor)
+- **3" soundbox-to-neck connection** (top limaçon diameter)
+
+`clements47.py` updated:
+- `D_KNOT_FLOOR = 410.0`  (16")
+- `D_KNOT_PEAK  = 380.0`  (set < D_FLOOR for monotonic taper, fixes
+  "pregnant soundbox" bulge from D_PEAK=510 default)
+- `D_KNOT_TOP   = 80.0`  (3")
+- `U_FLOOR_LEN  = 410.0`
+
+### Whole-harp lift to z >= 0
+Previously the floor was at `PEDESTAL_FLOOR_Z = -70.65` and various
+geometry sat below z=0.  User wanted the entire harp lifted so the
+floor is at z=0 with NOTHING below it.
+
+Approach:
+- `Z_OFFSET` raised: 186.78 -> 257.43 -> 270.0 (final).
+- `PEDESTAL_FLOOR_Z = 0.0` (was -70.65, then -39.39 attempt was reverted).
+- Net upward shift: +83.22 mm (= 70.65 + 12.57) applied to all
+  hand-edited path data:
+  - `edit_paths.svg` neck path knots (M and all C-segment endpoints)
+  - `buffer.svg` envelope path d-attribute (shifted in this session
+    -- earlier shift had failed; verified buffer y range is now
+    [1599.9, 1965.3])
+- N_KNOTS z values updated to match.
+
+### Pedestal/neck scoops re-tuned for new dimensions
+The smaller `D_KNOT_FLOOR=410` and `D_KNOT_TOP=80` constrain the
+parabolic-scoop radii.  Iterated until the geometry fit:
+- `SCOOP_RIM_RADIUS    = 180.0` mm  (was 163; max keeping R2 inside
+  the inner pedestal arc and Pe2.z >= ~30 mm above floor).
+- `SCOOP_TREBLE_RADIUS = 30.0` mm  (was 38; sized for D_TOP=80).
+- `SCOOP_DEPTH         = 60.0` mm  (was 80; reduces scoop axial extent
+  so it fits inside the now-shorter pedestal).
+- `SCOOP_TREBLE_DEPTH  = 22.0` mm.
+- `SCOOP_AIM_S_BASE    = 827.0` (unchanged).
+- `SCOOP_TREBLE_AIM_S  = 1448.0` (unchanged).
+
+CF base thickness from scoop bottom to floor: ~42 mm (1.66").  Plenty
+for filament-wound or vacuum-bag CF construction (typical floor wall
+target 5-8 mm; 42 mm is structural-pedestal solid).
+
+### Tablet app: Erand -> clements47/clements47app
+Moved the entire `../Erand/erandapp/` directory into
+`./clements47app/` so all clements47 work lives under one tree.
+
+- `clements47app/app/build.gradle`: gradle task renamed
+  `syncErandAssets` -> `syncAssets`; `from(repoRoot)` now points at
+  the parent (clements47 root); SVGs copied with their canonical
+  `clements47_*.svg` names (no rename).  The pedal/ subdirectory
+  copy retained.
+- `MainActivity.java`: added `WebChromeClient` to forward
+  `console.log()` from the WebView into logcat under tag
+  `WebViewConsole` (essential for debugging blank panels via `adb
+  logcat`).
+- `index.html`: switched panel-title font 64px -> 18px, buttons 50px
+  -> 13px (the previous 64px ate ~25% of the tablet screen on a
+  640x768 surface).  loadView() deferred to `window.load +
+  requestAnimationFrame` so panel dimensions are stable before
+  svgPanZoom touches the SVG.  svgPanZoom skipped on initial load
+  (preserveAspectRatio="xMidYMid meet"); only initialized lazily on
+  first fullscreen toggle.  The toggleFullscreen() routine now
+  destroys + recreates the svgPanZoom instance with two RAFs of
+  delay so the SVG has stable dimensions when re-init runs.
+- Tablet device id: P90YPDU16Y251200164 (still).
+
+### Column upgrade (carryover from earlier in session)
+Replaced rectangular column with a 32 x 36 mm hollow ELLIPTICAL CF
+tube, 4 mm wall (constants `COL_OD_X=32`, `COL_OD_Y=36`,
+`COL_WALL_T=4`).  Buckling SF improves to ~3.2 (from 2.65).
+`build_freecad.py build_column()` lofts an outer ellipse and
+subtracts an inner ellipse for the hollow cross-section.
+
+### CF construction notes (verified manufacturable)
+For each major component, identified CF technique + wall thickness:
+- **Column**: filament-wound 4mm ellipse over a removable mandrel.
+- **Pedestal**: vacuum-bagged or RTM/VARTM around an internal foam
+  core; scoop dish layed-up separately and bonded; structural epoxy
+  bondlines at limaçon-shaped joint with chamber.
+- **Soundbox**: vacuum-bagged hand layup with sandwich core (CF skins
+  + Nomex or balsa core for stiffness/damping).
+- **Neck**: solid CF or sandwich core; tenon-and-mortise joint into
+  pedestal/soundbox at limaçon-cap interface; helicoil pockets for
+  string-to-neck attachment.
+
+### Files changed this session
+- `clements47.py` (Z_OFFSET, PEDESTAL_FLOOR_Z, D_KNOT_*, SCOOP_* sizing)
+- `edit_paths.svg` (path z-shift +83.22)
+- `buffer.svg` (path d z-shift +83.22 -- the path data alone, 188
+  buffer disks were already at correct z because compute_buffers()
+  recomputed them)
+- `clements47app/` (entire tablet app moved here from Erand/)
+- `clements47app/app/build.gradle` (syncAssets task)
+- `clements47app/app/src/main/java/com/harp/erandapp/MainActivity.java`
+  (WebChromeClient added)
+- `clements47app/app/src/main/assets/index.html` (font sizes, deferred
+  loadView, lazy svgPanZoom init)
+- All 5 view SVGs regenerated.
+- `clements47.FCStd` regenerated with new dimensions.
+- HANDOFF.md (this update).
+
+### How to rebuild from scratch (home laptop)
+```
+cd ~/projects/clements47
+python3 build_views.py
+echo "_p='$(pwd)/build_freecad.py'; exec(open(_p).read(), {'__file__': _p, '__name__': '__main__'})" | freecadcmd
+echo "_p='$(pwd)/build_techdraw.py'; exec(open(_p).read(), {'__file__': _p, '__name__': '__main__'})" | freecadcmd
+cd clements47app && ./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am force-stop com.harp.erandapp
+adb shell am start -n com.harp.erandapp/.MainActivity
+```
+(The Android package id is still `com.harp.erandapp` -- only the app
+label and gradle task name were renamed.  Keeping the package id
+avoids forcing a clean install / data wipe on the tablet.)
+

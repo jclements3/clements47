@@ -39,7 +39,7 @@ SIN_R = np.sin(np.radians(RAKE_DEG))
 # Z_OFFSET = the height SBB sits above the floor (= length of bass tail
 # projected onto z-axis, derived from the SB tangent at t=0).
 # Computed from the unshifted SB Bezier; applied to all z constants below.
-Z_OFFSET = 257.428715  # SBB height above floor (shifted +70.65 so floor is at z=0)
+Z_OFFSET = 270.0  # SBB height above floor (shifted +70.65 so floor is at z=0)
 
 # SB Bezier control points: VERIFIED against strings.csv comments. The csv
 # documents these as the soundboard curve, so the canonical SB Bezier ends
@@ -74,7 +74,7 @@ FLOOR_EXTENSION = 0.0  # B_floor coincides with floor_end (below B1 at x=466.95)
 # was rescaled to fit strings.csv.
 COL_X_LEFT = -17.755         # column bottom-outer x (= center - COL_OD_X/2)
 COL_X_RIGHT = 14.245         # column bottom-inner x (= center + COL_OD_X/2)
-COL_TOP_Z = 1761.07          # column top z (shifted +70.65 with whole-harp lift)
+COL_TOP_Z = 1773.64          # column top z (shifted +70.65 with whole-harp lift)
 # Elliptical CF column cross-section (replaces the old 28x32 mm rectangle).
 # OD chosen for SF >= 3 in Euler buckling under 7079 N axial load with
 # K=0.7 clamped base.
@@ -113,16 +113,16 @@ COL_WALL_T = 4.0             # mm; CF wall thickness (hollow tube)
 # K1, K9 already encode the -7 deg rake from the column LEFT face; K6 is
 # anchored to SBN on the un-raked soundboard so it doesn't shift further.
 N_KNOTS = np.array([
-    [-225.34,  1761.07],  # N0 = K1  - column outer top, raked 7 deg
-    [-193.34,  1761.07],  # N1 = K10 - column inner top = N0 + (COL_OD_X, 0)
-    [-182.83,  1565.14],  # N2 = K9  - on column inner arc
-    [ 265.05,  1633.53],  # N3 = K8  - re-optimized (Nelder-Mead)
-    [ 582.21,  1753.34],  # N4 = K7  - on outermost C7 sharp disk
-    [ 660.42,  1753.99],  # N5 = K6 = St (axis at S't)
-    [ 720.60708956,  1701.29161098],  # N6 = K5 = Ut (back wall at S't)
-    [ 613.08,  1932.14],  # N7 = K4  - top arc treble end
-    [ 405.59,  1763.93],  # N8 = K3  - re-optimized
-    [  87.98,  1964.83],  # N9 = K2  - re-optimized
+    [-225.34,  1773.64],  # N0 = K1  - column outer top, raked 7 deg
+    [-193.34,  1773.64],  # N1 = K10 - column inner top = N0 + (COL_OD_X, 0)
+    [-182.83,  1577.71],  # N2 = K9  - on column inner arc
+    [ 265.05,  1646.10],  # N3 = K8  - re-optimized (Nelder-Mead)
+    [ 582.21,  1765.91],  # N4 = K7  - on outermost C7 sharp disk
+    [ 660.42,  1766.56],  # N5 = K6 = St (axis at S't)
+    [ 720.60708956,  1713.86289598],  # N6 = K5 = Ut (back wall at S't)
+    [ 613.08,  1944.71],  # N7 = K4  - top arc treble end
+    [ 405.59,  1776.50],  # N8 = K3  - re-optimized
+    [  87.98,  1977.40],  # N9 = K2  - re-optimized
 ])
 
 # Back-compat alias: legacy code that referenced K_KNOTS expects 9 rows in
@@ -169,7 +169,7 @@ PEDESTAL_SLIDE_T = 41.54      # mm of slide along sb_tan_unit (D1g-C1g UP
                               # edge of pedestal sector) just clears the
                               # parabolic dish around R1 -- 1 mm safety
                               # margin below the first-touch geometry.
-D_KNOT_PEAK  = 510.0                                           # D at s_peak (20" pear-soundboard width rounded up)
+D_KNOT_PEAK  = 380.0                                           # D at s_peak (less than D_FLOOR=410 -> monotonic inward taper, no pregnant bulge)
 D_KNOT_PEAK_S = 700.0                                          # arc length where D peaks
 D_KNOT_TOP    = 80.0                                           # D at G7g = Eb (3" soundbox-neck connection rounded up)
 D_KNOT_ET     = 50.0                                           # D at Et (G7-buffer tangent; elbow top, HALF limaçon)
@@ -221,7 +221,7 @@ SCOOP_ENABLED        = True
 # carbon-fiber outer wall; shifting the rim center by CF_WALL_T in +x keeps
 # the rim's higher-z endpoint (R2) clear of the pedestal's outer arc.
 CF_WALL_T            = 5.0     # mm; CF outer-wall thickness (scoop inset).
-SCOOP_RIM_RADIUS     = 163.0   # mm; max keeping >=5mm rim from B1 (parabola opening 326 mm)
+SCOOP_RIM_RADIUS     = 180.0   # mm; max keeping R2 inside pedestal arcs (>=5mm) AND Pe2.z>=30mm
 # Soundboard thickness gradient: thicker at bass for stiffness/efficiency,
 # thinner at treble for responsiveness (where there's no cavity assistance).
 # Linearly interpolated along the SB Bezier parameter t in [0, 1].
@@ -249,7 +249,7 @@ SCOOP_AIM_S_BASE     =  827.0  # area-weighted soundhole-cluster centroid
 # (s_at_St) on the back-wall side; axis aims at the soundhole-cluster centroid
 # in the treble half of the chamber (~s = 1500 mm, between holes #5 and #6).
 SCOOP_TREBLE_ENABLED = True
-SCOOP_TREBLE_RADIUS  = 38.0    # mm; max keeping >=5mm rim from B2 (parabola opening 76 mm)
+SCOOP_TREBLE_RADIUS  = 30.0    # mm; max keeping >=5mm rim from B2 with D_TOP=80 (parabola opening 60 mm)
 SCOOP_TREBLE_DEPTH   = 22.0    # mm; proportional to radius (depth/R ~ 0.6)
 SCOOP_TREBLE_AIM_S   = 1448.0  # area-weighted centroid of treble-cluster holes #4 (1369) and #5 (1600)
 
