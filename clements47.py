@@ -115,9 +115,9 @@ COL_WALL_T = 4.0             # mm; CF wall thickness (hollow tube)
 N_KNOTS = np.array([
     [-225.34,  1690.42],  # N0 = K1  - column outer top, raked 7 deg from COL_X_LEFT to z=C1f
     [-193.34,  1690.42],  # N1 = K10 - column inner top = N0 + (COL_OD_X, 0)
-    [-169.54,  1494.49],  # N2 = K9  - slid DOWN 2*AIR_GAP along column inner face from prior
+    [-182.83,  1494.49],  # N2 = K9  - on column inner arc at z=1494.49
     [ 265.05,  1562.88],  # N3 = K8  - re-optimized (Nelder-Mead)
-    [ 596.29,  1668.12],  # N4 = K7  - re-optimized
+    [ 582.21,  1682.69],  # N4 = K7  - on outermost C7 sharp disk perpendicular to buffer envelope
     [ 660.42,  1683.34],  # N5 = K6 = St (top of S; G7g + 2*AIR_GAP*tan1_unit)
     [ 730.38795897,  1622.07804902],  # N6 = K5 = Ut (top of U; B-locus extension at top)
     [ 613.08,  1861.49],  # N7 = K4  - top arc treble end (above F7 Nf, raised 50)
@@ -221,7 +221,7 @@ SCOOP_ENABLED        = True
 # carbon-fiber outer wall; shifting the rim center by CF_WALL_T in +x keeps
 # the rim's higher-z endpoint (R2) clear of the pedestal's outer arc.
 CF_WALL_T            = 5.0     # mm; CF outer-wall thickness (scoop inset).
-SCOOP_RIM_RADIUS     = 120.0   # mm; matches Erand precedent (was 120.75 there)
+SCOOP_RIM_RADIUS     = 163.0   # mm; max keeping >=5mm rim from B1 (parabola opening 326 mm)
 # Soundboard thickness gradient: thicker at bass for stiffness/efficiency,
 # thinner at treble for responsiveness (where there's no cavity assistance).
 # Linearly interpolated along the SB Bezier parameter t in [0, 1].
@@ -235,10 +235,23 @@ SCOOP_DEPTH          = 60.0    # mm; matches Erand precedent
 # turns these into the full scoop geometry. Initial values place rim at the
 # SF/SBB transition and aim at s ~= 700 mm along the chamber back wall.
 SCOOP_RIM_S_BASE     =  None   # set after _CHAMBER is built (= s_at_Sprime_b)
-SCOOP_AIM_S_BASE     =  950.0  # arc length s (mm) at aim point. 950 = mid-treble
-                               # hole region; the parabola only collimates above
-                               # ~1 kHz, so aim it where treble strings need help.
-                               # Bass already gets cavity-mode amplification.
+SCOOP_AIM_S_BASE     =  827.0  # area-weighted soundhole-cluster centroid
+                               # (after moving hole #3 to s=1150 to escape the
+                               # 1st-mode pressure node at s=1000).
+
+# ---------------------------------------------------------------------------
+# Parabolic scoop (TREBLE end -- carved into the solid CF NECK above the
+# chamber cap at S't). Mirrors the bass scoop, pointing back DOWN into the
+# chamber toward the treble-end soundhole cluster (holes #5 & #6).
+# ---------------------------------------------------------------------------
+# The chamber narrows fast at the top (D = 93 mm at G7g, 50 mm at Et), so the
+# treble scoop is smaller than the bass one. Rim sits at the chamber TOP CAP
+# (s_at_St) on the back-wall side; axis aims at the soundhole-cluster centroid
+# in the treble half of the chamber (~s = 1500 mm, between holes #5 and #6).
+SCOOP_TREBLE_ENABLED = True
+SCOOP_TREBLE_RADIUS  = 38.0    # mm; max keeping >=5mm rim from B2 (parabola opening 76 mm)
+SCOOP_TREBLE_DEPTH   = 22.0    # mm; proportional to radius (depth/R ~ 0.6)
+SCOOP_TREBLE_AIM_S   = 1448.0  # area-weighted centroid of treble-cluster holes #4 (1369) and #5 (1600)
 
 def load_strings_from_csv(csv_path):
     """Read note, OD, lengths, frequency from strings.csv.
@@ -451,76 +464,143 @@ def compute_S_full():
         'F': SF[1],
     }
 
-def compute_scoop():
-    """Parabolic-dish scoop carved into the SOLID CF BASE at the bottom of
-    the hollow chamber. The rim sits in the limaçon cross-section plane at
-    S'b (the chamber's bottom cap, where the hollow meets the solid base).
-    The dish opens UPWARD into the chamber; its axis points along the
-    chamber tangent at S'b. The aim_xz field still records the soundhole-
-    cluster centroid for documentation.
+SCOOP_RIM_GAP        = 5.0     # flat-rim distance from each B-corner along cap chord
+SCOOP_FRUSTUM_HEIGHT = 30.0    # distance (mm) from cap chord to parabola rim along axis_unit
 
-    Geometry:
-      rim_center_xz = midpoint of the S'b -> U'b limaçon diameter (on the
-                      chamber axis at s_at_Sprime_b)
-      axis_unit     = chamber tangent at S'b, in xz (90 deg from perp_into)
-      rim plane     = cross-section plane at S'b -> contains perp_into and y
-                      so the rim chord in side view overlays the S'b->U'b line
-      paraboloid_focal = R^2 / (4 * depth)
+
+def _intersect_cap(p, axis, B0, cap_dir):
+    """Solve p + t*axis = B0 + s*cap_dir for (t, s); return p + t*axis."""
+    A = np.array([[axis[0], -cap_dir[0]],
+                  [axis[1], -cap_dir[1]]])
+    rhs = B0 - p
+    t_s = np.linalg.solve(A, rhs)
+    return p + t_s[0] * axis
+
+
+def compute_scoop():
+    """Parabolic-dish scoop carved into the SOLID CF PEDESTAL. Geometry:
+
+      * Pe1 = R1 anchored on the cap chord at B0 + SCOOP_RIM_GAP * cap_dir
+        (zero frustum height on the B0 side).
+      * Rim chord direction chosen so the dish axis (perpendicular to rim
+        chord through rim_center) aims at the soundhole-cluster centroid.
+      * Pe2 = Pe1 + 2*tR * chord_dir (off the cap chord, below).
+      * R2 = projection of Pe2 along axis_unit onto cap chord.
+
+    Returns: Pe1=R1 (on cap), Pe2 (below cap), R2 (on cap, projection of Pe2).
+    The frustum is asymmetric -- zero-height on B0 side, with one wall
+    Pe2->R2 on the other side.
     """
-    # Reference position: rim_center_S3 = "2 air gaps below C1g along
-    # soundboard" (= S3). axis_unit is computed from this reference rim
-    # center toward the soundhole-cluster aim point (its original
-    # derivation), then FROZEN. The scoop is then translated as a rigid
-    # body (rim_center + axis_unit + chord direction all shift together)
-    # so the higher-z chord endpoint (R1) lands at "2 air gaps below S3
-    # along soundboard". This keeps the parabolic dish orientation exactly
-    # as it was; only its position changes.
-    sb_tan_at_C1g = SB_P1 - SB_P0
-    sb_tan_unit = sb_tan_at_C1g / float(np.linalg.norm(sb_tan_at_C1g))
-    # perp_into points perpendicular to soundboard tangent at C1g, INTO
-    # the chamber (+x side of the soundboard plane).
-    perp_into_C1g = np.array(
-        [sb_tan_unit[1], -sb_tan_unit[0]], dtype=float)
-    # S3 anchor offset INWARD by SOUNDBOARD_THICKNESS so the rim and the
-    # whole scoop sit on the INTERIOR face of the soundboard CF, not on
-    # the exterior surface.
-    rim_center_S3 = (SB_P0
-                     - 2.0 * AIR_GAP * sb_tan_unit
-                     + SOUNDBOARD_THICKNESS * perp_into_C1g)
-    # s_rim and chamber-derived values used downstream.
-    s_rim = SCOOP_RIM_S_BASE
-    D_pt, perp_into = chamber_axis(s_rim)
-    diam = diam_at_s(s_rim)
+    Dp_Spb, p_Spb = chamber_axis(_CHAMBER['s_at_Sprime_b'])
+    B0 = Dp_Spb
+    B1 = Dp_Spb + diam_at_s(_CHAMBER['s_at_Sprime_b']) * p_Spb
+    cap_chord_dir = (B1 - B0) / float(np.linalg.norm(B1 - B0))
+
+    R1 = B0 + SCOOP_RIM_GAP * cap_chord_dir
+    Pe1 = R1.copy()
+
     Dp_aim, perp_aim = chamber_axis(SCOOP_AIM_S_BASE)
     aim_xz = Dp_aim + diam_at_s(SCOOP_AIM_S_BASE) * perp_aim
-    # Frozen axis_unit (derived from rim_center_S3 toward aim_xz).
-    axis_unit = (aim_xz - rim_center_S3)
+
+    tR = float(SCOOP_RIM_RADIUS)
+    v = aim_xz - Pe1
+    v_norm = float(np.linalg.norm(v))
+    if v_norm < tR + 1e-6:
+        chord_dir = cap_chord_dir
+    else:
+        cos_th = tR / v_norm
+        sin_th = float(np.sqrt(max(0.0, 1.0 - cos_th * cos_th)))
+        v_unit = v / v_norm
+        v_perp = np.array([-v_unit[1], v_unit[0]])
+        cd_a = cos_th * v_unit + sin_th * v_perp
+        cd_b = cos_th * v_unit - sin_th * v_perp
+        if float(np.dot(cd_a, cap_chord_dir)) >= float(np.dot(cd_b, cap_chord_dir)):
+            chord_dir = cd_a
+        else:
+            chord_dir = cd_b
+
+    Pe2 = Pe1 + 2.0 * tR * chord_dir
+    rim_center_3d = 0.5 * (Pe1 + Pe2)
+    axis_unit = (aim_xz - rim_center_3d)
     axis_unit = axis_unit / float(np.linalg.norm(axis_unit))
-    # Compute the original R1 (higher-z chord endpoint) at rim_center_S3
-    # so we know how far to translate.
-    perp_xz = np.array([-axis_unit[1], axis_unit[0]], dtype=float)
-    e1_orig = rim_center_S3 + SCOOP_RIM_RADIUS * perp_xz
-    e2_orig = rim_center_S3 - SCOOP_RIM_RADIUS * perp_xz
-    R1_orig = e1_orig if e1_orig[1] >= e2_orig[1] else e2_orig
-    # Target: R1 = "2 air gaps below S3 along soundboard down" (on the
-    # interior face of the soundboard, so SOUNDBOARD_THICKNESS shift is
-    # already baked into rim_center_S3).
-    R1_target = rim_center_S3 - 2.0 * AIR_GAP * sb_tan_unit
-    shift = R1_target - R1_orig
-    rim_center_xz = rim_center_S3 + shift
-    # Inset the scoop INSIDE the CF outer wall by translating rc in +x by
-    # CF_WALL_T. axis_unit and aim_xz are already frozen above; shifting rc
-    # leaves the scoop axis direction (and therefore perp_xz) unchanged, so
-    # R1/R2 simply translate by the same +x amount. This keeps R2 clear of
-    # the pedestal's outer arc.
-    rim_center_xz = rim_center_xz + np.array([CF_WALL_T, 0.0], dtype=float)
-    paraboloid_focal = SCOOP_RIM_RADIUS ** 2 / (4.0 * SCOOP_DEPTH)
+
+    R2 = _intersect_cap(Pe2, axis_unit, B0, cap_chord_dir)
+
+    paraboloid_focal = tR ** 2 / (4.0 * SCOOP_DEPTH)
     return {
-        'rim_center_xz':    rim_center_xz,
-        'rim_radius':       SCOOP_RIM_RADIUS,
+        'rim_center_xz':    rim_center_3d,
+        'rim_radius':       tR,
         'depth':            SCOOP_DEPTH,
         'aim_xz':           aim_xz,
         'axis_unit':        axis_unit,
+        'rim_chord_dir':    chord_dir,
+        'Pe1':              Pe1,
+        'Pe2':              Pe2,
+        'R1':               R1,
+        'R2':               R2,
+        'B0':               B0,
+        'B1':               B1,
+        'paraboloid_focal': paraboloid_focal,
+    }
+
+
+def compute_scoop_treble():
+    """Mirror of compute_scoop() for the treble end:
+      * Pe3 = R3 anchored on cap chord at B3 + SCOOP_RIM_GAP * unit(B2-B3).
+      * Pe4 derived so dish axis (perp through rim_center) aims at treble
+        soundhole-cluster centroid.
+      * R4 = projection of Pe4 along axis_unit onto cap chord.
+    Frustum has zero height on B3 side; one wall Pe4->R4 on B2 side.
+    B3 and B2 tied to N_KNOTS[5] and N_KNOTS[6] for coincidence.
+    """
+    B3 = N_KNOTS[5].astype(float)
+    B2 = N_KNOTS[6].astype(float)
+    cap_chord_dir = (B2 - B3) / float(np.linalg.norm(B2 - B3))
+
+    R3 = B3 + SCOOP_RIM_GAP * cap_chord_dir
+    Pe3 = R3.copy()
+
+    Dp_aim, perp_aim = chamber_axis(SCOOP_TREBLE_AIM_S)
+    aim_xz = Dp_aim + diam_at_s(SCOOP_TREBLE_AIM_S) * perp_aim
+
+    tR = float(SCOOP_TREBLE_RADIUS)
+    v = aim_xz - Pe3
+    v_norm = float(np.linalg.norm(v))
+    if v_norm < tR + 1e-6:
+        chord_dir = cap_chord_dir
+    else:
+        cos_th = tR / v_norm
+        sin_th = float(np.sqrt(max(0.0, 1.0 - cos_th * cos_th)))
+        v_unit = v / v_norm
+        v_perp = np.array([-v_unit[1], v_unit[0]])
+        cd_a = cos_th * v_unit + sin_th * v_perp
+        cd_b = cos_th * v_unit - sin_th * v_perp
+        if float(np.dot(cd_a, cap_chord_dir)) >= float(np.dot(cd_b, cap_chord_dir)):
+            chord_dir = cd_a
+        else:
+            chord_dir = cd_b
+
+    Pe4 = Pe3 + 2.0 * tR * chord_dir
+    rim_center_3d = 0.5 * (Pe3 + Pe4)
+    axis_unit = (aim_xz - rim_center_3d)
+    axis_unit = axis_unit / float(np.linalg.norm(axis_unit))
+
+    R4 = _intersect_cap(Pe4, axis_unit, B3, cap_chord_dir)
+
+    paraboloid_focal = tR ** 2 / (4.0 * SCOOP_TREBLE_DEPTH)
+    return {
+        'rim_center_xz':    rim_center_3d,
+        'rim_radius':       tR,
+        'depth':            SCOOP_TREBLE_DEPTH,
+        'aim_xz':           aim_xz,
+        'axis_unit':        axis_unit,
+        'rim_chord_dir':    chord_dir,
+        'Pe3':              Pe3,
+        'Pe4':              Pe4,
+        'R3':               R3,
+        'R4':               R4,
+        'B2':               B2,
+        'B3':               B3,
         'paraboloid_focal': paraboloid_focal,
     }
 

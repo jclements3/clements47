@@ -51,7 +51,7 @@ PAL = {
     "soundboard":   "#0a7",       # teal-green
     "chamber_fill": "#e4d4b5",    # warm tan body
     "chamber_edge": "#222",
-    "neck":         "#3a2a14",    # dark brown
+    "neck":         "#5d4037",    # dark brown
     "column":       "#666",
     "floor":        "#888",
     "ref_dashed":   "#b8862b",    # gold reference lines
@@ -512,11 +512,11 @@ def side_view_content(strings):
                               ("P3", P3_arr, -22,  16)]:
         elems.append(
             f'<circle cx="{pt[0]:.2f}" cy="{pt[1]:.2f}" '
-            f'r="2.0" fill="#3a2a14"/>')
+            f'r="2.0" fill="#5d4037"/>')
         elems.append(
             f'<text transform="matrix(1,0,0,-1,{pt[0]+dx:.1f},{pt[1]+dy:.1f})" '
             f'font-family="sans-serif" font-size="11" font-weight="700" '
-            f'fill="#3a2a14">{label}</text>')
+            f'fill="#5d4037">{label}</text>')
 
     # (P1-to-N0 arc removed -- it was sweeping the long way around its very
     #  distant center and cluttering the side view.)
@@ -535,19 +535,40 @@ def side_view_content(strings):
     tan1 = c.bez_tan(*S["sb_bezier"], 1.0); tan1_unit = tan1 / np.linalg.norm(tan1)
     St_phantom = G7g + 2.0 * c.AIR_GAP * tan1_unit
     # Back-wall stations between B1 (s_at_Sprime_b) and B2 (s_at_St).
+    # Filter out stations whose z drops BELOW B1's z -- otherwise the
+    # polygon dips just below the B0-B1 cap line right before closing,
+    # creating a visible "tiny green line below the pedestal top" artifact.
+    _B1_pt = c.chamber_axis(_s_b1)[0] + c.diam_at_s(_s_b1) * c.chamber_axis(_s_b1)[1]
+    _B2_pt = c.chamber_axis(_s_b2)[0] + c.diam_at_s(_s_b2) * c.chamber_axis(_s_b2)[1]
     Bs_back = []
     for st in sts:
         if _s_b1 <= st["s"] <= _s_b2:
-            Bs_back.append(st["D"] + st["diam"] * st["perp"])
-    # Bracket with exact B1 and B2 so the soundbox closes cleanly at the
-    # bass-end limaçon line (B0-B1) and the treble-end cap line (B3-B2).
-    _B1_pt = c.chamber_axis(_s_b1)[0] + c.diam_at_s(_s_b1) * c.chamber_axis(_s_b1)[1]
-    _B2_pt = c.chamber_axis(_s_b2)[0] + c.diam_at_s(_s_b2) * c.chamber_axis(_s_b2)[1]
+            pt = st["D"] + st["diam"] * st["perp"]
+            if pt[1] >= _B1_pt[1] - 0.01:
+                Bs_back.append(pt)
     Bs_back = [_B1_pt] + Bs_back + [_B2_pt]
     # Body polygon: B0 -> chamber-axis -> SBB -> SB Bezier -> G7g
-    # -> St_phantom (B3) -> back-wall stations -> B1 -> close to B0.
+    # -> St_phantom (B3) -> back-wall stations -> B1 -> CUBIC BEZIER close
+    # back to B0 with handles hB1, hB0 (controlling the bass-cap shape).
+    # Default handles are on the B0-B1 line itself (zero offset), so the
+    # closing edge starts as a straight line; user can move hB0/hB1 into
+    # the pedestal direction to make a limaçon-style cap.
     body_pts = front_lo + sb_top[1:] + [St_phantom] + Bs_back[::-1]
-    body_d = "M " + " L ".join(f"{p[0]:.2f} {p[1]:.2f}" for p in body_pts) + " Z"
+    _B0_pt_pre = body_pts[0]   # = front_lo[0] = chamber_axis at S'b = B0
+    _B1_pt_pre = body_pts[-1]  # = Bs_back[0] = back-wall at S'b = B1
+    # Default initial handle positions: 1/3 chord from each endpoint along
+    # the B1->B0 direction. This keeps the closing edge a straight line
+    # initially and gives the user visible handles to move.
+    _B0_arr_pt = np.array(_B0_pt_pre, dtype=float)
+    _B1_arr_pt = np.array(_B1_pt_pre, dtype=float)
+    _cap_chord = _B0_arr_pt - _B1_arr_pt
+    _cap_len = float(np.linalg.norm(_cap_chord))
+    _cap_unit = _cap_chord / _cap_len if _cap_len > 1e-6 else np.array([1.0, 0.0])
+    hB1 = _B1_arr_pt + (_cap_len / 3.0) * _cap_unit
+    hB0 = _B0_arr_pt - (_cap_len / 3.0) * _cap_unit
+    body_d = ("M " + " L ".join(f"{p[0]:.2f} {p[1]:.2f}" for p in body_pts)
+              + f" C {hB1[0]:.2f},{hB1[1]:.2f} {hB0[0]:.2f},{hB0[1]:.2f} "
+              + f"{_B0_pt_pre[0]:.2f},{_B0_pt_pre[1]:.2f} Z")
     # Soundbox: green border (was the standalone soundboard line) now traces
     # the entire B0 -> SBB -> G7g -> B3 -> back wall -> B0 perimeter, with a
     # light-green fill tint for shading.
@@ -556,43 +577,55 @@ def side_view_content(strings):
                  f'stroke="{PAL["soundboard"]}" stroke-width="1.5" '
                  f'stroke-linejoin="round"/>')
 
-    # Sound ports:
-    #   s=750, 950, 1150: small trumpet-flared CF ports for fine acoustic
-    #         tuning. Throat r=5, mouth r=8, 35 mm exponential flare.
-    # (Bass-end access oval at s=400 removed -- it rendered as a stray
-    #  empty circle inside the soundbox.)
-    SH_THROAT_R = 5.0
-    SH_MOUTH_R  = 8.0
-    SH_FLARE_LEN = 35.0
-    # Small trumpet ports
-    sh_stations = [750.0, 950.0, 1150.0]   # arclength s in mm
-    for s_sh in sh_stations:
-        D_sh, p_sh = c.chamber_axis(s_sh)
-        diam_sh = c.diam_at_s(s_sh)
-        B_sh = D_sh + diam_sh * p_sh   # back-wall point in xz
-        cx, cz = float(B_sh[0]), float(B_sh[1])
-        # Outer (mouth) circle
+    # hB0 and hB1 -- soundbox bass-cap Bezier handles. Dots only (no leader
+    # lines, since the default handle position is on the B0-B1 chord and a
+    # leader would just overlay the cap stroke).
+    for _hlabel, _hpt in (("B0i", hB0), ("B1o", hB1)):
         elems.append(
-            f'<circle cx="{cx:.2f}" cy="{cz:.2f}" r="{SH_MOUTH_R:.2f}" '
-            f'fill="#fff" fill-opacity="0.85" stroke="#664400" '
-            f'stroke-width="0.9"/>')
-        # Inner (throat) circle - dashed to indicate it's behind the mouth
+            f'<circle cx="{_hpt[0]:.2f}" cy="{_hpt[1]:.2f}" '
+            f'r="2.0" fill="#0a8"/>')
         elems.append(
-            f'<circle cx="{cx:.2f}" cy="{cz:.2f}" r="{SH_THROAT_R:.2f}" '
-            f'fill="none" stroke="#664400" stroke-width="0.6" '
-            f'stroke-dasharray="2,2" opacity="0.85"/>')
-        # Crosshair
-        ext = SH_MOUTH_R + 4.0
-        elems.append(
-            f'<line x1="{cx-ext:.2f}" y1="{cz:.2f}" '
-            f'x2="{cx+ext:.2f}" y2="{cz:.2f}" '
-            f'stroke="#664400" stroke-width="0.5" '
-            f'stroke-dasharray="3,2" opacity="0.85"/>')
-        elems.append(
-            f'<line x1="{cx:.2f}" y1="{cz-ext:.2f}" '
-            f'x2="{cx:.2f}" y2="{cz+ext:.2f}" '
-            f'stroke="#664400" stroke-width="0.5" '
-            f'stroke-dasharray="3,2" opacity="0.85"/>')
+            f'<text transform="matrix(1,0,0,-1,{_hpt[0]+5:.1f},{_hpt[1]-5:.1f})" '
+            f'font-family="sans-serif" font-size="10" font-weight="700" '
+            f'fill="#066">{_hlabel}</text>')
+
+    # (3 hardcoded "trumpet tuning ports" at s=750/950/1150 removed --
+    #  the canonical soundhole list is now soundholes.csv, rendered below.)
+
+    # Main soundhole array from soundholes.csv. Drawn as black-ringed open
+    # circles on the chamber back wall (B-locus), with diameter = inner
+    # diameter from the CSV (the throat). This makes all holes -- including
+    # the new treble hole #6 at s=1600 -- visible in the side view.
+    try:
+        import csv as _csv_sh, os as _os_sh
+        _here_sh = _os_sh.path.dirname(_os_sh.path.abspath(__file__))
+        with open(_os_sh.path.join(_here_sh, 'soundholes.csv')) as _f_sh:
+            _rdr_sh = _csv_sh.DictReader(_f_sh)
+            for _row in _rdr_sh:
+                _s_sh = float(_row['s_mm'])
+                _d_in = float(_row['diam_inner_mm'])
+                _d_out = float(_row['diam_outer_mm'])
+                _D_sh, _p_sh = c.chamber_axis(_s_sh)
+                _diam_sh = c.diam_at_s(_s_sh)
+                _B_sh = _D_sh + _diam_sh * _p_sh
+                _cx, _cz = float(_B_sh[0]), float(_B_sh[1])
+                # Outer flare ring (mouth)
+                elems.append(
+                    f'<circle cx="{_cx:.2f}" cy="{_cz:.2f}" '
+                    f'r="{_d_out/2:.2f}" fill="#fff" fill-opacity="0.85" '
+                    f'stroke="#222" stroke-width="0.8"/>')
+                # Inner throat
+                elems.append(
+                    f'<circle cx="{_cx:.2f}" cy="{_cz:.2f}" '
+                    f'r="{_d_in/2:.2f}" fill="none" stroke="#222" '
+                    f'stroke-width="0.6" stroke-dasharray="2,2"/>')
+                # Hole index label
+                elems.append(
+                    f'<text transform="matrix(1,0,0,-1,{_cx+_d_out/2+3:.1f},'
+                    f'{_cz+3:.1f})" font-family="sans-serif" font-size="9" '
+                    f'fill="#222">{_row["sn"]}</text>')
+    except Exception as _e_sh:
+        print(f"  warn: failed to render soundholes.csv: {_e_sh}")
 
     # (Trumpet flare cross-section drafting inset removed -- it was drawn
     #  outside the harp body and inflated index.html's auto-fit viewBox,
@@ -782,6 +815,82 @@ def side_view_content(strings):
     neck_d_final = _neck_d_user if _neck_d_user else neck_d_kk
     elems.append(f'<path d="{neck_d_final}" fill="none" '
                  f'stroke="{PAL["neck"]}" stroke-width="1.2"/>')
+
+    # Parse neck path to recover the actual knot positions (so the N0..N9
+    # dots below sit on the rendered curve). Handle visualization is OFF by
+    # default in the side view -- it cluttered everything. Set
+    # SHOW_NECK_HANDLES=1 in the environment to re-enable.
+    try:
+        import re as _re_h
+        seg_to_n = [0, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+        toks_h = _re_h.findall(
+            r'[A-Za-z]|-?\d+\.?\d*(?:e-?\d+)?', neck_d_final)
+        ih = 0; cur_h = (0.0, 0.0); cmd_h = None; seg_idx = 0
+        handles = []
+        knot_pos = {}
+        while ih < len(toks_h):
+            if toks_h[ih].isalpha():
+                cmd_h = toks_h[ih]; ih += 1
+                if cmd_h in ('z', 'Z'):
+                    continue
+            if cmd_h in ('m', 'M'):
+                xh = float(toks_h[ih]); yh = float(toks_h[ih+1]); ih += 2
+                if cmd_h == 'm': xh += cur_h[0]; yh += cur_h[1]
+                cur_h = (xh, yh)
+                knot_pos[seg_to_n[0]] = cur_h
+                cmd_h = 'l' if cmd_h == 'm' else 'L'
+            elif cmd_h in ('c', 'C'):
+                h1x = float(toks_h[ih]);   h1y = float(toks_h[ih+1])
+                h2x = float(toks_h[ih+2]); h2y = float(toks_h[ih+3])
+                ex  = float(toks_h[ih+4]); ey  = float(toks_h[ih+5]); ih += 6
+                if cmd_h == 'c':
+                    h1x += cur_h[0]; h1y += cur_h[1]
+                    h2x += cur_h[0]; h2y += cur_h[1]
+                    ex  += cur_h[0]; ey  += cur_h[1]
+                n_start = seg_to_n[seg_idx]
+                n_end   = seg_to_n[seg_idx + 1] if seg_idx + 1 < len(seg_to_n) else 0
+                # Name handles by the KNOT they attach to (not by segment).
+                # Outgoing handle leaves N{n_start}; incoming handle arrives at N{n_end}.
+                handles.append((f'N{n_start}o', h1x, h1y, cur_h[0], cur_h[1]))
+                handles.append((f'N{n_end}i',   h2x, h2y, ex,      ey))
+                cur_h = (ex, ey)
+                knot_pos[n_end] = cur_h
+                seg_idx += 1
+            elif cmd_h in ('l', 'L'):
+                xh = float(toks_h[ih]); yh = float(toks_h[ih+1]); ih += 2
+                if cmd_h == 'l': xh += cur_h[0]; yh += cur_h[1]
+                cur_h = (xh, yh)
+            else:
+                ih += 1
+        for label, hx, hy, kx, kz in handles:
+            elems.append(
+                f'<line x1="{hx:.2f}" y1="{hy:.2f}" '
+                f'x2="{kx:.2f}" y2="{kz:.2f}" '
+                f'stroke="#0080a0" stroke-width="0.4" '
+                f'stroke-dasharray="2,2" opacity="0.7"/>')
+            elems.append(
+                f'<circle cx="{hx:.2f}" cy="{hy:.2f}" r="1.8" '
+                f'fill="#0080a0"/>')
+            # Offset label by handle's direction-from-knot so labels don't
+            # collide with the dot when handle is short.
+            _dx = hx - kx; _dz = hy - kz
+            _l = (_dx*_dx + _dz*_dz) ** 0.5
+            if _l > 1e-6:
+                _ux = _dx / _l; _uz = _dz / _l
+            else:
+                _ux, _uz = 1.0, 0.0
+            _tx = hx + 6 * _ux
+            _tz = hy + 6 * _uz
+            elems.append(
+                f'<text transform="matrix(1,0,0,-1,{_tx:.1f},{_tz:.1f})" '
+                f'font-family="sans-serif" font-size="9" '
+                f'fill="#003040">{label}</text>')
+    except Exception as _eh:
+        print(f"  warn: failed to parse neck path: {_eh}")
+        knot_pos = {}
+    # Stash the path-derived knot positions so the N0..N9 dots below can
+    # sit on the ACTUAL drawn neck path (not on stale N_KNOTS values).
+    globals()["_NECK_PATH_KNOTS"] = knot_pos
     # Save the FINAL neck path (user-edited if present, else computed) so
     # make_neck_svg.py can extract it without re-running the whole build.
     globals().setdefault("_LAST_NECK_D", "")
@@ -791,48 +900,51 @@ def side_view_content(strings):
     # polygon now traces the actual B-locus of the limacon stations, so the
     # decorative U-curve is redundant.)
 
-    # Parabolic scoop on the chamber back wall (pink). Rim is a 3D
-    # circle of radius R in the plane perpendicular to axis_unit; the
-    # rim chord projects to a line of length 2R perpendicular to
-    # axis_unit through rc in side view. Re-enabled per request.
+    # Bass scoop: parabola rim (Pe1, Pe2) sits BELOW the cap chord in the
+    # pedestal interior; axis aims at the soundhole. Frustum walls (along
+    # axis_unit) extend from each Pe up to the cap chord at R1, R2.
     scoop = c.compute_scoop()
     rc = scoop["rim_center_xz"]; aim = scoop["aim_xz"]
     R  = scoop["rim_radius"]
     au = scoop["axis_unit"]
-    perp_xz = np.array([-au[1], au[0]])
-    e1 = rc + R * perp_xz
-    e2 = rc - R * perp_xz
-    elems.append(f'<line x1="{e1[0]:.2f}" y1="{e1[1]:.2f}" '
-                 f'x2="{e2[0]:.2f}" y2="{e2[1]:.2f}" '
+    chord_dir = scoop["rim_chord_dir"]
+    pe1_pt = scoop["Pe1"]; pe2_pt = scoop["Pe2"]
+    r1_pt = scoop["R1"]; r2_pt = scoop["R2"]
+    B0_scoop = scoop["B0"]; B1_scoop = scoop["B1"]
+
+    # Parabola rim chord (Pe1 -> Pe2), bold purple since it's the actual
+    # parabola opening edge.
+    elems.append(f'<line x1="{pe1_pt[0]:.2f}" y1="{pe1_pt[1]:.2f}" '
+                 f'x2="{pe2_pt[0]:.2f}" y2="{pe2_pt[1]:.2f}" '
                  f'stroke="#a000a0" stroke-width="1.6"/>')
-    _sb_tan = c.SB_P1 - c.SB_P0
-    _sb_u = _sb_tan / np.linalg.norm(_sb_tan)
-    if np.dot(e1 - rc, -_sb_u) > np.dot(e2 - rc, -_sb_u):
-        r1_pt, r2_pt = e1, e2
-    else:
-        r1_pt, r2_pt = e2, e1
+    # Frustum walls Pe1 -> R1 and Pe2 -> R2 (along axis_unit).
+    elems.append(f'<line x1="{pe1_pt[0]:.2f}" y1="{pe1_pt[1]:.2f}" '
+                 f'x2="{r1_pt[0]:.2f}" y2="{r1_pt[1]:.2f}" '
+                 f'stroke="#a000a0" stroke-width="1.2"/>')
+    elems.append(f'<line x1="{pe2_pt[0]:.2f}" y1="{pe2_pt[1]:.2f}" '
+                 f'x2="{r2_pt[0]:.2f}" y2="{r2_pt[1]:.2f}" '
+                 f'stroke="#a000a0" stroke-width="1.2"/>')
+    # Pe1, Pe2 dots and labels (parabola rim, below cap)
+    for _lbl, _pt, _dy in (("Pe1", pe1_pt, -6), ("Pe2", pe2_pt, +12)):
+        elems.append(f'<circle cx="{_pt[0]:.2f}" cy="{_pt[1]:.2f}" '
+                     f'r="2.0" fill="#a000a0"/>')
+        elems.append(
+            f'<text transform="matrix(1,0,0,-1,{_pt[0]+5:.1f},{_pt[1]+_dy:.1f})" '
+            f'font-family="sans-serif" font-size="11" font-weight="700" '
+            f'fill="#a000a0">{_lbl}</text>')
+    # R1, R2 dots and labels (frustum top, ON cap chord)
     elems.append(f'<circle cx="{r1_pt[0]:.2f}" cy="{r1_pt[1]:.2f}" '
                  f'r="2.0" fill="#a000a0"/>')
     elems.append(f'<circle cx="{r2_pt[0]:.2f}" cy="{r2_pt[1]:.2f}" '
                  f'r="2.0" fill="#a000a0"/>')
     elems.append(
-        f'<text transform="matrix(1,0,0,-1,{r1_pt[0]+5:.1f},{r1_pt[1]-14:.1f})" '
+        f'<text transform="matrix(1,0,0,-1,{r1_pt[0]-22:.1f},{r1_pt[1]-6:.1f})" '
         f'font-family="sans-serif" font-size="14" font-weight="700" '
         f'fill="#a000a0">R1</text>')
     elems.append(
         f'<text transform="matrix(1,0,0,-1,{r2_pt[0]+5:.1f},{r2_pt[1]+8:.1f})" '
         f'font-family="sans-serif" font-size="14" font-weight="700" '
         f'fill="#a000a0">R2</text>')
-    # Frustum side walls: R1->P2 and R2->P3. Revolving these about the scoop
-    # axis sweeps a truncated cone connecting the scoop rim to the bass-end
-    # limaçon (B0-B1 = P3-P2). The interior (R2-R1-P2-P3 quadrilateral) is
-    # hollow -- filled white -- so sound passes from the rim chord through
-    # the open B0-B1 chord into the soundbox interior.
-    _frustum_pts = [r2_pt, r1_pt, P2_arr, P3_arr]
-    _frustum_d = "M " + " L ".join(f"{p[0]:.2f},{p[1]:.2f}" for p in _frustum_pts) + " Z"
-    elems.append(
-        f'<path d="{_frustum_d}" fill="#fff" stroke="#a000a0" '
-        f'stroke-width="1.2" stroke-linejoin="round"/>')
     # B1, B2: bass-end limaçon endpoints (chamber axis and back wall at S'b).
     _Dp_lim, _p_lim = c.chamber_axis(c._CHAMBER['s_at_Sprime_b'])
     _B1 = np.array(_Dp_lim)
@@ -904,19 +1016,61 @@ def side_view_content(strings):
     samples = []
     for r in np.linspace(-R, R, 41):
         zprime = r * r / (4.0 * fl)
-        pt = vertex + zprime * au + r * perp_xz
+        pt = vertex + zprime * au + r * chord_dir
         samples.append(pt)
     void_d = "M " + " L ".join(f"{p[0]:.2f},{p[1]:.2f}" for p in samples) + " Z"
     elems.append(f'<path d="{void_d}" fill="#fff" stroke="#a000a0" '
                  f'stroke-width="1.0" opacity="1.0"/>')
-    elems.append(f'<line x1="{rc[0]:.2f}" y1="{rc[1]:.2f}" '
-                 f'x2="{aim[0]:.2f}" y2="{aim[1]:.2f}" '
+    # Dish axis line: from rim_center ALONG axis_unit (the ACTUAL dish
+    # axis, perpendicular to the rim chord by parabola geometry). The
+    # endpoint is the intersection of the ray rc + t*au (t >= 0) with the
+    # chamber back wall (B-locus polyline). This guarantees the line
+    # direction is exactly axis_unit, so it remains perpendicular to the
+    # rim chord in the rendered SVG.
+    _S_data = c.compute_S_full()
+    _ts_chk = np.linspace(0, 1, 401)
+    _bw_pts = []
+    for _t in _ts_chk:
+        _D = c.bez(*_S_data['sb_bezier'], _t)
+        _tan = c.bez_tan(*_S_data['sb_bezier'], _t)
+        _tan_u = _tan / np.linalg.norm(_tan)
+        _perp = np.array([_tan_u[1], -_tan_u[0]])
+        _s = c._CHAMBER['s_at_SBB'] + _t * c._CHAMBER['L_sb']
+        _diam = c.diam_at_s(_s)
+        _bw_pts.append(_D + _diam * _perp)
+    _bw_pts = np.array(_bw_pts)
+
+    def _ray_polyline_first_hit(p, d, pts):
+        """Return t > 0 of first intersection of p + t*d with the polyline
+        pts[0]..pts[-1], or None if no hit."""
+        best_t = None
+        for i in range(len(pts) - 1):
+            a = pts[i]; b = pts[i+1]
+            r = b - a
+            rxd = r[0]*d[1] - r[1]*d[0]
+            if abs(rxd) < 1e-12:
+                continue
+            pa = p - a
+            s = (pa[0]*d[1] - pa[1]*d[0]) / rxd
+            t_ray = (pa[0]*r[1] - pa[1]*r[0]) / rxd
+            if 0.0 <= s <= 1.0 and t_ray > 1e-6:
+                if best_t is None or t_ray < best_t:
+                    best_t = t_ray
+        return best_t
+
+    # Start the dotted axis line from the PARABOLA ORIGIN (vertex), not
+    # rim_center, so the line visually traces the dish axis from the
+    # focal area through the rim and out to the chamber back wall.
+    _t_hit = _ray_polyline_first_hit(vertex, au, _bw_pts)
+    _bass_end_pt = vertex + (_t_hit if _t_hit is not None else 800.0) * au
+    elems.append(f'<line x1="{vertex[0]:.2f}" y1="{vertex[1]:.2f}" '
+                 f'x2="{_bass_end_pt[0]:.2f}" y2="{_bass_end_pt[1]:.2f}" '
                  f'stroke="#a000a0" stroke-width="0.6" '
                  f'stroke-dasharray="3,2" opacity="0.8"/>')
     elems.append(f'<circle cx="{rc[0]:.2f}" cy="{rc[1]:.2f}" '
                  f'r="2.0" fill="#a000a0"/>')
-    elems.append(f'<circle cx="{aim[0]:.2f}" cy="{aim[1]:.2f}" '
-                 f'r="2.0" fill="#a000a0"/>')
+    elems.append(f'<circle cx="{_bass_end_pt[0]:.2f}" cy="{_bass_end_pt[1]:.2f}" '
+                 f'r="2.5" fill="#a000a0"/>')
 
     # Hb (S'b -> U'b limaçon at the chamber/pedestal boundary) removed --
     # this line lived in the pedestal area which is now its own polygon
@@ -930,6 +1084,93 @@ def side_view_content(strings):
                  f'x2="{Up_t[0]:.2f}" y2="{Up_t[1]:.2f}" '
                  f'stroke="#cc0000" stroke-width="1.0" '
                  f'stroke-dasharray="4,3" opacity="0.7"/>')   # Eb (= Ht) at S't
+
+    # Treble scoop: parabola rim (Pe3, Pe4) sits ABOVE the cap chord in
+    # the solid neck CF; axis aims at the treble soundhole-cluster.
+    # Frustum walls along axis_unit DOWN to the cap chord at R3, R4.
+    if c.SCOOP_TREBLE_ENABLED:
+        ts = c.compute_scoop_treble()
+        trc = ts["rim_center_xz"]; t_aim = ts["aim_xz"]
+        tR  = ts["rim_radius"]
+        tau = ts["axis_unit"]
+        chord_dir = ts["rim_chord_dir"]
+        pe3_pt = ts["Pe3"]; pe4_pt = ts["Pe4"]
+        r3_pt = ts["R3"]; r4_pt = ts["R4"]
+        B2_pt = ts["B2"]; B3_pt = ts["B3"]
+        # Parabola rim chord Pe3 -> Pe4
+        elems.append(f'<line x1="{pe3_pt[0]:.2f}" y1="{pe3_pt[1]:.2f}" '
+                     f'x2="{pe4_pt[0]:.2f}" y2="{pe4_pt[1]:.2f}" '
+                     f'stroke="#a000a0" stroke-width="1.6"/>')
+        # Frustum walls Pe3 -> R3 and Pe4 -> R4
+        elems.append(f'<line x1="{pe3_pt[0]:.2f}" y1="{pe3_pt[1]:.2f}" '
+                     f'x2="{r3_pt[0]:.2f}" y2="{r3_pt[1]:.2f}" '
+                     f'stroke="#a000a0" stroke-width="1.2"/>')
+        elems.append(f'<line x1="{pe4_pt[0]:.2f}" y1="{pe4_pt[1]:.2f}" '
+                     f'x2="{r4_pt[0]:.2f}" y2="{r4_pt[1]:.2f}" '
+                     f'stroke="#a000a0" stroke-width="1.2"/>')
+        # Pe3, Pe4 dots + labels (parabola rim, above cap)
+        for _lbl, _pt, _dy in (("Pe3", pe3_pt, -6), ("Pe4", pe4_pt, +12)):
+            elems.append(f'<circle cx="{_pt[0]:.2f}" cy="{_pt[1]:.2f}" '
+                         f'r="2.0" fill="#a000a0"/>')
+            elems.append(
+                f'<text transform="matrix(1,0,0,-1,{_pt[0]+5:.1f},{_pt[1]+_dy:.1f})" '
+                f'font-family="sans-serif" font-size="11" font-weight="700" '
+                f'fill="#a000a0">{_lbl}</text>')
+        # R3, R4 dots + labels (frustum top on cap chord)
+        elems.append(f'<circle cx="{r3_pt[0]:.2f}" cy="{r3_pt[1]:.2f}" '
+                     f'r="2.0" fill="#a000a0"/>')
+        elems.append(f'<circle cx="{r4_pt[0]:.2f}" cy="{r4_pt[1]:.2f}" '
+                     f'r="2.0" fill="#a000a0"/>')
+        elems.append(
+            f'<text transform="matrix(1,0,0,-1,{r3_pt[0]-22:.1f},{r3_pt[1]-6:.1f})" '
+            f'font-family="sans-serif" font-size="14" font-weight="700" '
+            f'fill="#a000a0">R3</text>')
+        elems.append(
+            f'<text transform="matrix(1,0,0,-1,{r4_pt[0]+5:.1f},{r4_pt[1]+8:.1f})" '
+            f'font-family="sans-serif" font-size="14" font-weight="700" '
+            f'fill="#a000a0">R4</text>')
+        # Parabolic bowl profile: vertex sits in the SOLID NECK above the
+        # rim (away from the chamber, opposite axis_into). Bowl curve from
+        # R3 through vertex back to R4. White-filled (bowl is hollow CF
+        # cavity inside the neck mass).
+        t_vertex = trc - ts["depth"] * tau
+        elems.append(f'<circle cx="{t_vertex[0]:.2f}" cy="{t_vertex[1]:.2f}" '
+                     f'r="2.0" fill="#a000a0"/>')
+        elems.append(
+            f'<text transform="matrix(1,0,0,-1,{t_vertex[0]+6:.1f},{t_vertex[1]+4:.1f})" '
+            f'font-family="sans-serif" font-size="12" font-weight="700" '
+            f'fill="#a000a0">vt</text>')
+        t_fl = ts["paraboloid_focal"]
+        t_samples = []
+        for r in np.linspace(-tR, tR, 41):
+            zprime = r * r / (4.0 * t_fl)
+            # bowl: vertex + zprime * (-axis_into) + r * chord_dir
+            # => closes back to R3/R4 at r=±tR (since zprime=tR^2/(4fl)=depth)
+            pt = t_vertex + zprime * tau + r * chord_dir
+            t_samples.append(pt)
+        t_void_d = ("M " + " L ".join(f"{p[0]:.2f},{p[1]:.2f}" for p in t_samples)
+                    + " Z")
+        elems.append(f'<path d="{t_void_d}" fill="#fff" stroke="#a000a0" '
+                     f'stroke-width="1.0" opacity="1.0"/>')
+        # Dish axis line: from PARABOLA VERTEX (origin) ALONG axis_into
+        # to the chamber back wall. Starting at vertex visually traces
+        # the dish axis from the focal region through the rim and into
+        # the chamber, so the line direction is exactly tau (perpendicular
+        # to the rim chord by construction).
+        _t_hit_t = _ray_polyline_first_hit(t_vertex, tau, _bw_pts)
+        _t_end_pt = t_vertex + (_t_hit_t if _t_hit_t is not None else 600.0) * tau
+        elems.append(f'<line x1="{t_vertex[0]:.2f}" y1="{t_vertex[1]:.2f}" '
+                     f'x2="{_t_end_pt[0]:.2f}" y2="{_t_end_pt[1]:.2f}" '
+                     f'stroke="#a000a0" stroke-width="0.6" '
+                     f'stroke-dasharray="3,2" opacity="0.8"/>')
+        elems.append(f'<circle cx="{trc[0]:.2f}" cy="{trc[1]:.2f}" '
+                     f'r="2.0" fill="#a000a0"/>')
+        elems.append(f'<circle cx="{_t_end_pt[0]:.2f}" cy="{_t_end_pt[1]:.2f}" '
+                     f'r="2.5" fill="#a000a0"/>')
+        elems.append(
+            f'<text transform="matrix(1,0,0,-1,{trc[0]+6:.1f},{trc[1]+4:.1f})" '
+            f'font-family="sans-serif" font-size="12" font-weight="700" '
+            f'fill="#a000a0">rct</text>')
 
     # Et: elbow top = external common tangent to G7's Nf_flat and Nf_sharp
     # disks (both R = CLEARANCE), drawn on the OUTER (+perp, back-of-neck)
@@ -1000,11 +1241,11 @@ def side_view_content(strings):
                               ("C3", C3_arr, -22,  -4)]:
         elems.append(
             f'<circle cx="{pt[0]:.2f}" cy="{pt[1]:.2f}" '
-            f'r="2.0" fill="#3a2a14"/>')
+            f'r="2.0" fill="#5d4037"/>')
         elems.append(
             f'<text transform="matrix(1,0,0,-1,{pt[0]+dx:.1f},{pt[1]+dy:.1f})" '
             f'font-family="sans-serif" font-size="11" font-weight="700" '
-            f'fill="#3a2a14">{label}</text>')
+            f'fill="#5d4037">{label}</text>')
 
     # Strings: grommet on SB, top raked into -x (csv.z encodes the rake)
     for s in strings:
@@ -1324,12 +1565,12 @@ def side_view_content(strings):
     # (Sb, St, Ub, Ut) are 2*AIR_GAP beyond the SB Bezier's actual ends.
     _tan1_lbl = c.bez_tan(*S["sb_bezier"], 1.0)
     _tan1_lbl_u = _tan1_lbl / _np.linalg.norm(_tan1_lbl)
-    # St = top of S (= G7g + 2*AIR_GAP * tan1_unit)
-    St_xz = c.SB_P3 + 2.0 * c.AIR_GAP * _tan1_lbl_u
-    # Ut = top of U (= B-locus at G7g + 2*AIR_GAP * tan1_unit, parallel to St)
+    # St (= B3) snapped to N_KNOTS[5] so B3, N5, and the chamber-axis
+    # cap corner all coincide (single point in side view).
+    St_xz = c.N_KNOTS[5].astype(float)
+    # Ut (= B2) snapped to N_KNOTS[6] so B2 and N6 coincide too.
     Dp_g, p_g = c.chamber_axis(c._CHAMBER['s_at_G7g'])
-    Ut_xz = Dp_g + c.diam_at_s(c._CHAMBER['s_at_G7g']) * p_g \
-            + 2.0 * c.AIR_GAP * _tan1_lbl_u
+    Ut_xz = c.N_KNOTS[6].astype(float)
     # Sb = bottom of S (= where the BTF is at z = SBB.z - 2*AIR_GAP, on BTF curve)
     Dp_Spb, p_Spb = c.chamber_axis(c._CHAMBER['s_at_Sprime_b'])
     Sb_xz = Dp_Spb
@@ -1358,25 +1599,37 @@ def side_view_content(strings):
     _ped_perp_raw = np.array([p_Spb[1], -p_Spb[0]])
     _ped_perp_raw = _ped_perp_raw / np.linalg.norm(_ped_perp_raw)
     _ped_perp = _ped_perp_raw if _ped_perp_raw[1] < 0 else -_ped_perp_raw
-    SCOOP_THICK = 60.0
-    P3_xz = Sb_xz + SCOOP_THICK * _ped_perp     # 60 mm below S'b along Hb perp
-    P2_xz = Ub_xz + SCOOP_THICK * _ped_perp     # 60 mm below U'b along Hb perp
+    # P2 == B1 and P3 == B0 (pedestal top cap shares corners with soundbox
+    # bottom cap; no offset between them). The bass scoop frustum becomes a
+    # degenerate quadrilateral at the cap chord but the scoop bowl still
+    # carves into the pedestal interior below.
+    SCOOP_THICK = 0.0
+    P3_xz = Sb_xz + SCOOP_THICK * _ped_perp     # = Sb_xz = B0
+    P2_xz = Ub_xz + SCOOP_THICK * _ped_perp     # = Ub_xz = B1
 
     # Neck CCW: N0..N9 stored directly in N_KNOTS, CCW from column outer top.
     # Legacy K-name mapping: N0=K1, N1=K10, N2=K9, N3=K8, N4=K7, N5=K6,
     # N6=K5, N7=K4, N8=K3, N9=K2. Region corners P (pedestal), S (scoop),
     # B (soundbox).
+    # IMPORTANT: dot positions come from the ACTUAL rendered neck path
+    # (parsed from neck_d_final earlier into _NECK_PATH_KNOTS). N_KNOTS may
+    # be slightly out of sync with hand-edited paths in edit_paths.svg.
+    _path_knots = globals().get("_NECK_PATH_KNOTS", {}) or {}
+    def _Nk(i):
+        if i in _path_knots:
+            return np.array(_path_knots[i])
+        return N[i]
     pts = [
-        ("N0",   N[0],                      ( 8,   8)),
-        ("N1",   N[1],                      ( 8,  -8)),
-        ("N2",   N[2],                      (-25,  -8)),
-        ("N3",   N[3],                      ( 6,   8)),
-        ("N4",   N[4],                      ( 6,   8)),
-        ("N5",   N[5],                      ( 8,  10)),
-        ("N6",   N[6],                      ( 6,   8)),
-        ("N7",   N[7],                      ( 6,  -8)),
-        ("N8",   N[8],                      ( 6,   8)),
-        ("N9",   N[9],                      ( 6,   8)),
+        ("N0",   _Nk(0),                    ( 8,   8)),
+        ("N1",   _Nk(1),                    ( 8,  -8)),
+        ("N2",   _Nk(2),                    (-25,  -8)),
+        ("N3",   _Nk(3),                    ( 6,   8)),
+        ("N4",   _Nk(4),                    ( 6,   8)),
+        ("N5",   _Nk(5),                    ( 8,  10)),
+        ("N6",   _Nk(6),                    ( 6,   8)),
+        ("N7",   _Nk(7),                    ( 6,  -8)),
+        ("N8",   _Nk(8),                    ( 6,   8)),
+        ("N9",   _Nk(9),                    ( 6,   8)),
         # P0/P1/P2 are now drawn at the pedestal triangle corners earlier
         # (see build_views.py pedestal section). The old P0/P1/P2/P3
         # chamber-construction labels are removed; their structural roles

@@ -311,3 +311,104 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am force-stop com.harp.erandapp
 adb shell am start -n com.harp.erandapp/.MainActivity
 ```
+
+---
+
+## Session 2026-04-29: Acoustic refactor + parameterized scoops + neck color
+
+### Major design changes
+- **Both scoops refactored to asymmetric frustum geometry.**  Pe1=R1
+  (Pe3=R3 for treble) anchored ON the cap chord at SCOOP_RIM_GAP=5mm
+  from the B-corner; Pe2 (Pe4) derived by axis-aim solver so the dish
+  axis passes EXACTLY through the soundhole-cluster centroid; R2 (R4)
+  is the projection of Pe2 along axis_unit onto the cap chord.  All
+  four points (Pe1, Pe2, R1, R2) are exposed in the dict and rendered
+  in the side view.
+- **Parabolas grown to maximum** while preserving 5mm rim and aim
+  accuracy.  SCOOP_RIM_RADIUS 120 -> 163 mm (bass opening 240 -> 326 mm,
+  +36%).  SCOOP_TREBLE_RADIUS 35 -> 38 mm (treble opening 70 -> 76 mm,
+  +9% from previous; +52% from earlier 25 mm reduction step).  Both
+  axis_aim_err = 0 deg.
+- **Hole #3 moved s=1078 -> s=1150** to escape the 1st-mode pressure
+  node at s=1000 (closed-closed chamber, fundamental ~106 Hz).
+- **Bass scoop aim retuned 950 -> 827 mm** (true area-weighted
+  centroid of the new 5-hole array).
+- **Treble scoop aim retuned 1500 -> 1448 mm** (centroid of
+  treble-cluster holes #4 and #5).
+- **N5/B3 and N6/B2 coincidence** enforced.  B3 = N_KNOTS[5], B2 =
+  N_KNOTS[6] (B2 was already snapped; B3 is now too).  Path
+  segments edited so path's knots 4 and 5 land at canonical N6, N5.
+- **N0/C3 and N1/C2 coincidence** enforced.  Path M shifted from
+  -223.34 to -225.34, segment 8 endpoint adjusted so N1 = canonical
+  -193.34.
+- **N2 placed on column inner arc** at z=1494.49.  N_KNOTS[2]
+  updated from -169.54 to -182.83.  Segment 7 endpoint and segment 8
+  handle relatives recomputed so N2, N2o, N1i all sit on the inner arc.
+- **N0o aligned along column direction** (parallel to C0->C3 line,
+  unit (-0.117, 0.993)) -- handle no longer points at an arbitrary
+  angle; it continues the column's outer edge upward into the neck.
+- **N5o reduced to 68.85 mm** length (after iterations: 30 -> 60 ->
+  100 -> 85 -> 76.5 -> 68.85), still parallel to F7g-G7g soundboard
+  tangent, nudged southeast to clear D7s/E7s/F7s/G7s buffers.
+- **N9i and N9o lengthened ~2x** (uncommitted experimental edit, but
+  user approved -- "neck looks better now") to flatten the top hump.
+- **Neck Bezier handles renamed** to N{x}i / N{x}o (incoming /
+  outgoing per knot) instead of segment-indexed h{i}a / h{i}b.  Each
+  handle name now contains the knot number it attaches to.
+- **N4 moved to (582.21, 1682.69)** -- on the C7-sharp clearance
+  circle, perpendicular to the buffer envelope at C7's tangent point.
+  Combined with h6a (N4o) lowering -20 mm, clears the F6/G6/A6/B6/C7
+  sharp-buffer violations along segment 6.
+- **Neck path coincides with all 10 knot dots** (parsed from the
+  hand-edited path, used as dot positions in the side view).
+- **Neck color** changed from #3a2a14 (dark mahogany) to #5d4037
+  (walnut) for better contrast against white background.
+
+### Acoustic confirmation
+- Chamber volume ~103 L (vs 60-75 L for traditional 47-string concert
+  harps; ours +35-70%).
+- Total sound-hole area 46 cm^2.
+- Helmholtz frequency ~66 Hz (multi-hole formula).  In traditional
+  60-90 Hz sweet spot.
+- 1st chamber axial mode (closed-closed) at 106 Hz (~G#2).  Pressure
+  node at chamber midpoint s=1000.  Holes are now well-separated from
+  this node after #3 moved to s=1150.
+- All 47 grommets verified ON the soundboard (Ng_x in [0, 643.29]).
+
+### New parameters (clements47.py)
+- SCOOP_RIM_GAP        = 5.0 mm     # min flat rim from B-corner along cap
+- SCOOP_FRUSTUM_HEIGHT = 30.0 mm    # cap-to-rim depth (used by intersect)
+- SCOOP_RIM_RADIUS     = 163.0 mm   # bass parabola radius (was 120)
+- SCOOP_TREBLE_RADIUS  = 38.0 mm    # treble parabola radius (was 35)
+- SCOOP_AIM_S_BASE     = 827.0 mm   # bass dish aim (was 950)
+- SCOOP_TREBLE_AIM_S   = 1448.0 mm  # treble dish aim (was 1500)
+
+### Side-view additions
+- All 18 neck-path Bezier handles drawn as labelled dots (N0o..N9i).
+- hB0, hB1 (soundbox bass-cap Bezier handles) drawn as dots without
+  leader lines (default position on cap chord, so the closing edge
+  starts as a straight line).
+- Pe1, Pe2 (parabola rim, below cap) and R1, R2 (frustum top, on cap)
+  drawn as separate dots in bass scoop.  Same for Pe3, Pe4, R3, R4 in
+  treble.
+- Frustum walls Pe1->R1 and Pe2->R2 (and treble equivalents) drawn as
+  thinner purple lines.
+- Dotted axis line now starts from the parabola VERTEX (origin) and
+  runs along axis_unit to where it hits the chamber back wall.
+  Mathematically perpendicular to rim chord by construction.
+- Soundbox cap (B0->B1 closing edge) converted to cubic Bezier with
+  hB0/hB1 handles for limacon-shaped bass cap (default straight, but
+  now adjustable).
+- All trumpet-tuning ports removed from side view; soundholes.csv is
+  now the canonical hole list (5 holes after removing the original
+  bass-end #1 at s=171).
+
+### Pending / deferred
+- (no major outstanding deferred items beyond the limaçon-cap and
+  acoustic-port questions from the prior session, which remain open)
+
+### Files changed this session
+clements47.py, build_views.py, edit_paths.svg, soundholes.csv,
+clements47_side.svg, clements47_top.svg, clements47_front.svg,
+clements47_rear.svg, clements47_sbf.svg, clements47_views.svg,
+HANDOFF.md (this file).
