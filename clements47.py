@@ -39,7 +39,7 @@ SIN_R = np.sin(np.radians(RAKE_DEG))
 # Z_OFFSET = the height SBB sits above the floor (= length of bass tail
 # projected onto z-axis, derived from the SB tangent at t=0).
 # Computed from the unshifted SB Bezier; applied to all z constants below.
-Z_OFFSET = 186.778715  # SBB height above floor
+Z_OFFSET = 257.428715  # SBB height above floor (shifted +70.65 so floor is at z=0)
 
 # SB Bezier control points: VERIFIED against strings.csv comments. The csv
 # documents these as the soundboard curve, so the canonical SB Bezier ends
@@ -63,7 +63,7 @@ U2_S_FRAC = 0.50
 U2_DEPTH = 250.0
 
 # U floor extension length
-U_FLOOR_LEN = 300.0    # legacy alias; the floor footprint Uf - Sf is now
+U_FLOOR_LEN = 410.0    # floor footprint x-depth from SF to U3 (16" rounded up)
                        # derived from D_KNOT_FLOOR (= the lima\u00e7on's D-to-B
                        # distance at SF), not from this constant. Kept only
                        # for back-compat with anything reading the symbol.
@@ -74,7 +74,7 @@ FLOOR_EXTENSION = 0.0  # B_floor coincides with floor_end (below B1 at x=466.95)
 # was rescaled to fit strings.csv.
 COL_X_LEFT = -17.755         # column bottom-outer x (= center - COL_OD_X/2)
 COL_X_RIGHT = 14.245         # column bottom-inner x (= center + COL_OD_X/2)
-COL_TOP_Z = 1690.42          # column top z (= C1f.z, was 1600 + Z_OFFSET = 1786.78)
+COL_TOP_Z = 1761.07          # column top z (shifted +70.65 with whole-harp lift)
 # Elliptical CF column cross-section (replaces the old 28x32 mm rectangle).
 # OD chosen for SF >= 3 in Euler buckling under 7079 N axial load with
 # K=0.7 clamped base.
@@ -113,16 +113,16 @@ COL_WALL_T = 4.0             # mm; CF wall thickness (hollow tube)
 # K1, K9 already encode the -7 deg rake from the column LEFT face; K6 is
 # anchored to SBN on the un-raked soundboard so it doesn't shift further.
 N_KNOTS = np.array([
-    [-225.34,  1690.42],  # N0 = K1  - column outer top, raked 7 deg from COL_X_LEFT to z=C1f
-    [-193.34,  1690.42],  # N1 = K10 - column inner top = N0 + (COL_OD_X, 0)
-    [-182.83,  1494.49],  # N2 = K9  - on column inner arc at z=1494.49
-    [ 265.05,  1562.88],  # N3 = K8  - re-optimized (Nelder-Mead)
-    [ 582.21,  1682.69],  # N4 = K7  - on outermost C7 sharp disk perpendicular to buffer envelope
-    [ 660.42,  1683.34],  # N5 = K6 = St (top of S; G7g + 2*AIR_GAP*tan1_unit)
-    [ 730.38795897,  1622.07804902],  # N6 = K5 = Ut (top of U; B-locus extension at top)
-    [ 613.08,  1861.49],  # N7 = K4  - top arc treble end (above F7 Nf, raised 50)
-    [ 405.59,  1693.28],  # N8 = K3  - re-optimized
-    [  87.98,  1894.18],  # N9 = K2  - re-optimized
+    [-225.34,  1761.07],  # N0 = K1  - column outer top, raked 7 deg
+    [-193.34,  1761.07],  # N1 = K10 - column inner top = N0 + (COL_OD_X, 0)
+    [-182.83,  1565.14],  # N2 = K9  - on column inner arc
+    [ 265.05,  1633.53],  # N3 = K8  - re-optimized (Nelder-Mead)
+    [ 582.21,  1753.34],  # N4 = K7  - on outermost C7 sharp disk
+    [ 660.42,  1753.99],  # N5 = K6 = St (axis at S't)
+    [ 720.60708956,  1701.29161098],  # N6 = K5 = Ut (back wall at S't)
+    [ 613.08,  1932.14],  # N7 = K4  - top arc treble end
+    [ 405.59,  1763.93],  # N8 = K3  - re-optimized
+    [  87.98,  1964.83],  # N9 = K2  - re-optimized
 ])
 
 # Back-compat alias: legacy code that referenced K_KNOTS expects 9 rows in
@@ -142,10 +142,10 @@ CLEARANCE = 8.0
 # Diameter follows a smooth centripetal Catmull-Rom curve through D_KNOTS
 # (defined after _CHAMBER is built). This gives a pear / teardrop stack-of-
 # limacons -- no constant-D regions, no kinks, no parallel walls.
-D_KNOT_FLOOR = 343.56                                          # D at SF -- shortened so the arc from B2 to floor (centered at the
+D_KNOT_FLOOR = 410.0                                           # D at SF (16" base width rounded up to 410 mm)
                                                                 # B1-B2 ∩ P0-P1 intersection) lands EXACTLY at P1.
 PEDESTAL_TOP_Z   = -20.65    # mm; top of the pedestal (BEFORE sliding).
-PEDESTAL_FLOOR_Z = -70.65    # mm; bottom of the pedestal (BEFORE sliding).
+PEDESTAL_FLOOR_Z = 0.0       # mm; floor at z=0 (whole harp at z >= 0).
 PEDESTAL_LEFT_X  = -69.74    # mm; pedestal P0 x (BEFORE sliding).
 PEDESTAL_FLOOR_LENGTH = 380.0  # mm; |P0-P1| floor base of pedestal -- FIXED
                                 # constant. 380 mm ~= 15 in, in line with
@@ -169,9 +169,9 @@ PEDESTAL_SLIDE_T = 41.54      # mm of slide along sb_tan_unit (D1g-C1g UP
                               # edge of pedestal sector) just clears the
                               # parabolic dish around R1 -- 1 mm safety
                               # margin below the first-touch geometry.
-D_KNOT_PEAK  = 280.0                                           # D at s_peak (~ Lyon&Healy 23 / Salvi Apollo)
+D_KNOT_PEAK  = 510.0                                           # D at s_peak (20" pear-soundboard width rounded up)
 D_KNOT_PEAK_S = 700.0                                          # arc length where D peaks
-D_KNOT_TOP    = 93.0                                           # D at G7g = Eb (Ht; chamber CAP, full limaçon)
+D_KNOT_TOP    = 80.0                                           # D at G7g = Eb (3" soundbox-neck connection rounded up)
 D_KNOT_ET     = 50.0                                           # D at Et (G7-buffer tangent; elbow top, HALF limaçon)
 D_KNOT_NECK  = 32.0                                            # legacy: matches NECK_W_Y_REF
 TOP_DIAM = float(np.linalg.norm(N_KNOTS[7] - N_KNOTS[5]))      # ‖N7-N5‖ (= ‖K4-K6‖) — neck-pocket diameter, NOT chamber

@@ -74,6 +74,21 @@ LIMACON_N_PTS      = 64
 COLUMN_W_Y         = 32.0
 NECK_W_Y           = 32.0
 
+# Wall thicknesses for hollow CF shells (mm).
+PEDESTAL_WALL_T = 8.0
+NECK_WALL_T     = 5.0
+SOUNDBOX_WALL_T = 5.0
+
+# Tenon depths (mm).
+TENON_DEPTH_PED_SB     = 20.0   # soundbox-bottom tenon, into pedestal
+TENON_DEPTH_SB_NECK    = 15.0   # neck-bottom tenon, into soundbox
+TENON_DEPTH_COL_PED    = 30.0   # column-base tenon, into pedestal
+TENON_DEPTH_COL_NECK   = 15.0   # column-top tenon, into neck
+
+# Helicoil insert pocket spec at column-neck joint.
+HELICOIL_OD     = 9.0
+HELICOIL_DEPTH  = 12.0
+
 BASE_DIAM = 500.0
 TOP_DIAM  = float(np.linalg.norm(c.K_KNOTS[3] - c.K_KNOTS[5]))
 
@@ -441,6 +456,379 @@ def make_scoop(doc, scoop, host_obj, label):
     return obj
 
 
+def build_pedestal_hollow(doc, scooped_obj):
+    """Hollow the pedestal: subtract an inner-offset loft from the (scooped)
+    pedestal solid, leaving a PEDESTAL_WALL_T (=8 mm) shell.
+
+    The implementation builds the same loft as `build_pedestal_solid` but
+    with the per-station diameter reduced by 2*PEDESTAL_WALL_T (=16 mm) and
+    the floor footprint inset by the same amount. Cap both ends so the
+    inner solid is closed; subtract from the supplied scooped pedestal.
+    """
+    print(">>> Building pedestal shell (hollow, 8 mm wall) ...")
+    S = c.compute_S_full()
+    SF = np.asarray(S["SF"], dtype=float)
+    U3 = np.asarray(S["U3"], dtype=float)
+    floor_z = float(c.PEDESTAL_FLOOR_Z)
+
+    diam_floor_outer = float(np.linalg.norm(U3 - SF))
+    perp_floor       = (U3 - SF) / diam_floor_outer
+
+    # Inset floor: shrink limacon diameter by 2*WALL and shift D-point along
+    # +perp by WALL so the limacon stays inside the outer.
+    diam_floor_in = max(diam_floor_outer - 2.0 * PEDESTAL_WALL_T, 1.0)
+    D_floor_in    = np.array([SF[0] + PEDESTAL_WALL_T * perp_floor[0],
+                              floor_z + PEDESTAL_WALL_T * perp_floor[1]],
+                             dtype=float)
+
+    s_top = c._CHAMBER['s_at_Sprime_b']
+    D_top, perp_top = c.chamber_axis(s_top)
+    D_top    = np.asarray(D_top, dtype=float)
+    perp_top = np.asarray(perp_top, dtype=float)
+    n = float(np.linalg.norm(perp_top))
+    if n > 1e-12:
+        perp_top = perp_top / n
+    diam_top_outer = float(c.diam_at_s(s_top))
+    diam_top_in    = max(diam_top_outer - 2.0 * PEDESTAL_WALL_T, 1.0)
+    D_top_in = D_top + PEDESTAL_WALL_T * perp_top
+
+    N_STATIONS = 16
+    wires = []
+    for i in range(N_STATIONS):
+        u = i / float(N_STATIONS - 1)
+        D_i = (1.0 - u) * D_floor_in + u * D_top_in
+        perp_i = (1.0 - u) * perp_floor + u * perp_top
+        nn = float(np.linalg.norm(perp_i))
+        if nn > 1e-12:
+            perp_i = perp_i / nn
+        diam_i = (1.0 - u) * diam_floor_in + u * diam_top_in
+        pts = _limacon_3d(D_i, perp_i, diam_i)
+        wires.append(_make_wire_from_pts(pts))
+    inner_solid = Part.makeLoft(wires, True, True, False)
+    shell = scooped_obj.Shape.cut(inner_solid)
+    obj = doc.addObject("Part::Feature", "PedestalShell")
+    obj.Shape = shell
+    return obj
+
+
+def _polygon_inset_2d(pts_xz, dist):
+    """Inset a closed 2D polygon (list of (x,z) tuples) by `dist` (positive
+    = inward). Manual implementation: at each vertex, average the inward
+    normals of the two adjacent edges, then offset the vertex along that
+    bisector by dist / sin(half_angle). Robust enough for the convex-ish
+    neck polygon and any moderately-shaped polygon.
+
+    Inward direction: signed area > 0 (CCW) => inward = rotate edge +90 deg
+    (i.e. (-dy, dx) for edge (dx, dy)). For CW we flip sign.
+    """
+    pts = list(pts_xz)
+    if pts[0] == pts[-1]:
+        pts = pts[:-1]
+    n = len(pts)
+    # Signed area
+    A = 0.0
+    for i in range(n):
+        x0, z0 = pts[i]
+        x1, z1 = pts[(i + 1) % n]
+        A += x0 * z1 - x1 * z0
+    ccw = A > 0.0
+    out = []
+    for i in range(n):
+        xp, zp = pts[(i - 1) % n]
+        x0, z0 = pts[i]
+        xn, zn = pts[(i + 1) % n]
+        # Edge directions (prev->curr, curr->next)
+        e1 = np.array([x0 - xp, z0 - zp], dtype=float)
+        e2 = np.array([xn - x0, zn - z0], dtype=float)
+        l1 = np.linalg.norm(e1); l2 = np.linalg.norm(e2)
+        if l1 < 1e-12 or l2 < 1e-12:
+            out.append((x0, z0)); continue
+        e1u = e1 / l1; e2u = e2 / l2
+        # Inward normals (rotate edge by +90 deg for CCW, -90 for CW)
+        if ccw:
+            n1 = np.array([-e1u[1], e1u[0]])
+            n2 = np.array([-e2u[1], e2u[0]])
+        else:
+            n1 = np.array([ e1u[1], -e1u[0]])
+            n2 = np.array([ e2u[1], -e2u[0]])
+        bis = n1 + n2
+        bl = np.linalg.norm(bis)
+        if bl < 1e-9:
+            # 180 deg straight; just offset by n1
+            offset = dist * n1
+        else:
+            bis_u = bis / bl
+            # half-angle between edges: dot(n1, bis_u) = sin(half_angle)
+            sin_half = float(np.dot(n1, bis_u))
+            if abs(sin_half) < 1e-6:
+                offset = dist * n1
+            else:
+                offset = (dist / sin_half) * bis_u
+        out.append((x0 + offset[0], z0 + offset[1]))
+    return out
+
+
+def build_neck_hollow(doc, neck_scooped):
+    """Hollow the neck: extrude an inset polygon and subtract.
+
+    Inset the 2D xz polygon by NECK_WALL_T (=5 mm) inward; extrude by
+    NECK_W_Y - 2*WALL (=22 mm) in y, centered (so 5 mm wall on each y face).
+    Subtract from the (scooped) neck solid.
+    """
+    print(">>> Building neck shell (hollow, 5 mm wall) ...")
+    neck_segs = c.build_neck_segments()
+    K5 = c.K_KNOTS[4]
+    poly_xz = []
+    for seg_idx, seg in enumerate(neck_segs):
+        if seg_idx == 3:
+            poly_xz.append((float(K5[0]), float(K5[1])))
+        for t in np.linspace(0.0, 1.0, 30):
+            P = c.bez(*seg, t)
+            poly_xz.append((float(P[0]), float(P[1])))
+    uniq = [poly_xz[0]]
+    for p in poly_xz[1:]:
+        if abs(p[0] - uniq[-1][0]) > 1e-6 or abs(p[1] - uniq[-1][1]) > 1e-6:
+            uniq.append(p)
+
+    # Try shapely first; fall back to manual inset.
+    inset = None
+    try:
+        from shapely.geometry import Polygon as _ShPoly
+        sh = _ShPoly(uniq)
+        sh_in = sh.buffer(-NECK_WALL_T, join_style=2)  # mitre joins
+        if sh_in.is_empty:
+            inset = None
+        else:
+            # Take exterior of largest geometry
+            geom = sh_in
+            if geom.geom_type == "MultiPolygon":
+                geom = max(geom.geoms, key=lambda g: g.area)
+            inset = [(float(x), float(z)) for x, z in list(geom.exterior.coords)]
+    except Exception as e:
+        print(f"    shapely unavailable ({e}); using manual inset")
+        inset = None
+    if inset is None:
+        inset = _polygon_inset_2d(uniq, NECK_WALL_T)
+
+    # Close the polygon
+    if inset[0] != inset[-1]:
+        inset.append(inset[0])
+
+    inset_y_half = (NECK_W_Y - 2.0 * NECK_WALL_T) / 2.0  # 11 mm
+    vecs = [Vec(x, -inset_y_half, z) for x, z in inset]
+    base = Part.Face(Part.makePolygon(vecs))
+    inner = base.extrude(Vec(0, NECK_W_Y - 2.0 * NECK_WALL_T, 0))
+    shell = neck_scooped.Shape.cut(inner)
+    obj = doc.addObject("Part::Feature", "NeckShell")
+    obj.Shape = shell
+    return obj
+
+
+def _build_chamber_loft_solid(diam_offset=0.0, label=None, doc=None):
+    """Helper: build a CLOSED solid loft of the chamber (SBB->G7g) with
+    optional uniform diameter offset (subtract `diam_offset` from BASE/TOP
+    diameter at every station). Same parametrization as `build_chamber`.
+    """
+    S = c.compute_S_full()
+    sb_bez = S["sb_bezier"]
+    sb_ext = S["sb_extension"]
+    ts_sb, arc_sb = c.bez_arclen_table(*sb_bez, n=2000)
+    ts_ex, arc_ex = c.bez_arclen_table(*sb_ext, n=500)
+    L_sb = float(arc_sb[-1])
+    L_total = L_sb + float(arc_ex[-1])
+
+    wires = []
+    for s in np.linspace(0.0, L_sb, CHAMBER_N_STATIONS):
+        ti = float(np.interp(s, arc_sb, ts_sb))
+        D = c.bez(*sb_bez, ti)
+        t_dir = c.bez_tan(*sb_bez, ti)
+        t_dir = t_dir / np.linalg.norm(t_dir)
+        perp = np.array([t_dir[1], -t_dir[0]])
+        frac = s / L_total
+        diam = BASE_DIAM * (1 - frac) + TOP_DIAM * frac
+        diam = max(diam - diam_offset, 1.0)
+        # Shift D by half the offset along perp to keep inner inside outer
+        D_pt = np.asarray(D) + (diam_offset / 2.0) * perp
+        pts = _limacon_3d(D_pt, perp, diam)
+        wires.append(_make_wire_from_pts(pts))
+    return Part.makeLoft(wires, True, True, False)
+
+
+def build_soundbox_shell(doc):
+    """Hollow soundbox shell: outer chamber loft minus inner chamber loft
+    (D - 2*WALL = D - 10 mm). Both are closed solids."""
+    print(">>> Building soundbox shell (5 mm wall) ...")
+    outer = _build_chamber_loft_solid(diam_offset=0.0)
+    inner = _build_chamber_loft_solid(diam_offset=2.0 * SOUNDBOX_WALL_T)
+    shell = outer.cut(inner)
+    obj = doc.addObject("Part::Feature", "SoundboxShell")
+    obj.Shape = shell
+    return obj
+
+
+# ---------------------------------------------------------------------------
+# Tenon volumes (visualizable assembly aids; not actual mortise cuts)
+# ---------------------------------------------------------------------------
+
+def _limacon_loft_between_z(D_xz, perp_xz, diam, z_lo, z_hi, n_stations=4):
+    """Build a closed loft of the same limacon at multiple z stations
+    spanning [z_lo, z_hi]. The limacon shape is constant, just shifted in z.
+    """
+    wires = []
+    zs = np.linspace(z_lo, z_hi, n_stations)
+    for z in zs:
+        D_z = np.array([D_xz[0], z], dtype=float)
+        pts = _limacon_3d(D_z, perp_xz, diam)
+        wires.append(_make_wire_from_pts(pts))
+    return Part.makeLoft(wires, True, True, False)
+
+
+def build_tenon_pedestal_soundbox(doc):
+    """Soundbox-bottom 5-mm-wall tenon: 20 mm tall hollow limacon shell at
+    S'b cross-section, descending from z(S'b) into the pedestal."""
+    print(">>> Building Tenon_PedestalSoundbox (limacon shell, 20 mm) ...")
+    s_top = c._CHAMBER['s_at_Sprime_b']
+    D_xz, perp_xz = c.chamber_axis(s_top)
+    D_xz = np.asarray(D_xz, dtype=float)
+    perp_xz = np.asarray(perp_xz, dtype=float)
+    nrm = float(np.linalg.norm(perp_xz))
+    if nrm > 1e-12:
+        perp_xz = perp_xz / nrm
+    diam_outer = float(c.diam_at_s(s_top))
+    z_top = float(D_xz[1])
+    z_bot = z_top - TENON_DEPTH_PED_SB
+
+    outer = _limacon_loft_between_z(D_xz, perp_xz, diam_outer, z_bot, z_top, 4)
+    diam_inner = max(diam_outer - 2.0 * SOUNDBOX_WALL_T, 1.0)
+    D_inner = D_xz + SOUNDBOX_WALL_T * perp_xz
+    inner = _limacon_loft_between_z(D_inner, perp_xz, diam_inner, z_bot, z_top, 4)
+    tenon = outer.cut(inner)
+    obj = doc.addObject("Part::Feature", "Tenon_PedestalSoundbox")
+    obj.Shape = tenon
+    return obj
+
+
+def build_tenon_soundbox_neck(doc):
+    """Neck-bottom CF closed-loop tenon: 15 mm tall closed-loop solid at
+    S't cross-section, descending from z(S't) down into the soundbox."""
+    print(">>> Building Tenon_SoundboxNeck (limacon shell, 15 mm) ...")
+    s_top = c._CHAMBER['s_at_St']
+    D_xz, perp_xz = c.chamber_axis(s_top)
+    D_xz = np.asarray(D_xz, dtype=float)
+    perp_xz = np.asarray(perp_xz, dtype=float)
+    nrm = float(np.linalg.norm(perp_xz))
+    if nrm > 1e-12:
+        perp_xz = perp_xz / nrm
+    diam_outer = float(c.diam_at_s(s_top))
+    z_top = float(D_xz[1])
+    z_bot = z_top - TENON_DEPTH_SB_NECK
+
+    outer = _limacon_loft_between_z(D_xz, perp_xz, diam_outer, z_bot, z_top, 4)
+    diam_inner = max(diam_outer - 2.0 * NECK_WALL_T, 1.0)
+    D_inner = D_xz + NECK_WALL_T * perp_xz
+    inner = _limacon_loft_between_z(D_inner, perp_xz, diam_inner, z_bot, z_top, 4)
+    tenon = outer.cut(inner)
+    obj = doc.addObject("Part::Feature", "Tenon_SoundboxNeck")
+    obj.Shape = tenon
+    return obj
+
+
+def _build_column_segment(z_lo, z_hi, label, doc):
+    """Build a hollow-elliptical column segment between absolute z_lo and
+    z_hi (raked with the same -7 deg as the main column).
+    """
+    F = float(c.compute_S_full()["F"])
+    z0_full = F
+    z1_full = float(c.K_KNOTS[0, 1])
+    h_full = z1_full - z0_full
+    dx_top_full = -h_full * TAN_RAKE
+    cx0_full = (c.COL_X_LEFT + c.COL_X_RIGHT) / 2.0
+    cx1_full = cx0_full + dx_top_full
+
+    # Linear interpolation of column-axis cx vs z. Allow extrapolation outside
+    # [z0_full, z1_full] (e.g. base-tenon below the floor).
+    def cx_at(z):
+        u = (z - z0_full) / max(h_full, 1e-9)
+        return cx0_full + u * (cx1_full - cx0_full)
+
+    a_out = c.COL_OD_X / 2.0
+    b_out = c.COL_OD_Y / 2.0
+    a_in  = a_out - c.COL_WALL_T
+    b_in  = b_out - c.COL_WALL_T
+
+    def ell_face(cx, z, a, b):
+        n = 96
+        pts = []
+        for i in range(n):
+            t = 2.0 * 3.141592653589793 * i / n
+            pts.append(Vec(cx + a * np.cos(t), b * np.sin(t), z))
+        pts.append(pts[0])
+        return Part.makePolygon(pts)
+
+    cx_lo = cx_at(z_lo); cx_hi = cx_at(z_hi)
+    out_lo = ell_face(cx_lo, z_lo, a_out, b_out)
+    out_hi = ell_face(cx_hi, z_hi, a_out, b_out)
+    in_lo  = ell_face(cx_lo, z_lo, a_in,  b_in)
+    in_hi  = ell_face(cx_hi, z_hi, a_in,  b_in)
+    outer = Part.makeLoft([out_lo, out_hi], True, True, False)
+    inner = Part.makeLoft([in_lo,  in_hi],  True, True, False)
+    seg = outer.cut(inner)
+    obj = doc.addObject("Part::Feature", label)
+    obj.Shape = seg
+    return obj, cx_lo, cx_hi
+
+
+def build_tenon_column_pedestal(doc):
+    """Column-base tenon: 30 mm-tall hollow elliptical tube descending from
+    the floor (z=0) to z=-30, sitting inside the pedestal floor area."""
+    print(">>> Building Tenon_ColumnPedestal (30 mm, below floor) ...")
+    obj, _, _ = _build_column_segment(-TENON_DEPTH_COL_PED, 0.0,
+                                      "Tenon_ColumnPedestal", doc)
+    return obj
+
+
+def build_tenon_column_neck(doc):
+    """Column-top tenon: 15 mm-tall hollow elliptical tube above COL_TOP_Z."""
+    print(">>> Building Tenon_ColumnNeck (15 mm, above column top) ...")
+    z0 = float(c.COL_TOP_Z)
+    z1 = z0 + TENON_DEPTH_COL_NECK
+    obj, cx0, cx1 = _build_column_segment(z0, z1, "Tenon_ColumnNeck", doc)
+    return obj, cx0, cx1
+
+
+def build_helicoil_pockets(doc, cx_top_mid):
+    """4x cylindrical helicoil receiver pockets at top/bottom/left/right of
+    the column-top ellipse, mid-tenon (z = COL_TOP_Z + TENON/2). Pockets are
+    cylinders of OD=HELICOIL_OD, length=HELICOIL_DEPTH, oriented radially
+    inward toward the column axis (i.e. for the +x pocket, axis is -x; for
+    the +y pocket, axis is -y, etc.)."""
+    print(">>> Building HelicoilPockets (4x cylinders at column-neck joint) ...")
+    z_mid = float(c.COL_TOP_Z) + TENON_DEPTH_COL_NECK / 2.0
+    a_out = c.COL_OD_X / 2.0
+    b_out = c.COL_OD_Y / 2.0
+    r = HELICOIL_OD / 2.0
+    L = HELICOIL_DEPTH
+
+    cyls = []
+    # +x pocket: starts a bit outside +x edge, axis = (-1,0,0)
+    p_px = Vec(cx_top_mid + a_out + L, 0.0, z_mid)
+    c1 = Part.makeCylinder(r, L, p_px, Vec(-1, 0, 0))
+    # -x pocket: mirror
+    p_mx = Vec(cx_top_mid - a_out - L, 0.0, z_mid)
+    c2 = Part.makeCylinder(r, L, p_mx, Vec( 1, 0, 0))
+    # +y pocket: axis along -y
+    p_py = Vec(cx_top_mid, b_out + L, z_mid)
+    c3 = Part.makeCylinder(r, L, p_py, Vec(0, -1, 0))
+    # -y pocket: axis along +y
+    p_my = Vec(cx_top_mid, -b_out - L, z_mid)
+    c4 = Part.makeCylinder(r, L, p_my, Vec(0,  1, 0))
+    cyls = [c1, c2, c3, c4]
+    comp = Part.makeCompound(cyls)
+    obj = doc.addObject("Part::Feature", "HelicoilPockets")
+    obj.Shape = comp
+    return obj
+
+
 def main():
     if not HAS_FC:
         print("FreeCAD not available; nothing to do.", file=sys.stderr)
@@ -450,10 +838,25 @@ def main():
     build_floor_limacon(doc)
     build_column(doc)
     pedestal = build_pedestal_solid(doc)
-    make_scoop(doc, c.compute_scoop(), pedestal, "PedestalScooped")
+    pedestal_scooped = make_scoop(doc, c.compute_scoop(), pedestal,
+                                   "PedestalScooped")
     neck = build_neck(doc)
-    make_scoop(doc, c.compute_scoop_treble(), neck, "NeckScooped")
+    neck_scooped = make_scoop(doc, c.compute_scoop_treble(), neck,
+                               "NeckScooped")
     build_strings(doc)
+
+    # New: hollow shells, tenons, helicoil pockets.
+    build_pedestal_hollow(doc, pedestal_scooped)
+    build_neck_hollow(doc, neck_scooped)
+    build_soundbox_shell(doc)
+    build_tenon_pedestal_soundbox(doc)
+    build_tenon_soundbox_neck(doc)
+    build_tenon_column_pedestal(doc)
+    _tenon_cn_obj, cx_top_lo, cx_top_hi = build_tenon_column_neck(doc)
+    # Use the midpoint cx for helicoil placement (mid-tenon z height)
+    cx_mid = 0.5 * (cx_top_lo + cx_top_hi)
+    build_helicoil_pockets(doc, cx_mid)
+
     doc.recompute()
     doc.saveAs(OUTPUT_FCSTD)
     print(f">>> Saved: {OUTPUT_FCSTD}")

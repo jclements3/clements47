@@ -1,0 +1,68 @@
+apply plugin: 'com.android.application'
+
+// Sync clements47 viewer assets (index.html + SVGs) from the project
+// root into app/src/main/assets/ before every build. Single source of
+// truth, no duplicated tree.
+task syncAssets(type: Copy) {
+    def repoRoot = rootProject.projectDir.parentFile
+    into "${projectDir}/src/main/assets"
+    from(repoRoot) {
+        include 'index.html'
+        include 'svg-pan-zoom.min.js'
+        include 'clements47_side.svg'
+        include 'clements47_top.svg'
+        include 'clements47_front.svg'
+        include 'clements47_rear.svg'
+        include 'clements47_sbf.svg'
+        include 'clements47_views.svg'
+        include 'clements47_techdraw.svg'
+        include 'clements47_shoulder_techdraw.svg'
+        include 'lever_3d.svg'
+    }
+    from("${repoRoot}/pedal") {
+        include 'clicky_side.svg'
+        include 'tuner_side.svg'
+        include 'dual_clicky.svg'
+        into 'pedal'
+    }
+}
+
+tasks.configureEach { t ->
+    if (t.name == 'preBuild' || (t.name.startsWith('pre') && t.name.endsWith('Build'))) {
+        t.dependsOn syncAssets
+    }
+    if (t.name.startsWith('merge') && t.name.endsWith('Assets')) {
+        t.dependsOn syncAssets
+    }
+}
+
+android {
+    namespace 'com.harp.erandapp'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.harp.erandapp"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "0.1.0"
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.9.0'
+}
