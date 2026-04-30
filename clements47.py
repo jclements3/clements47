@@ -464,8 +464,7 @@ def compute_S_full():
         'F': SF[1],
     }
 
-SCOOP_RIM_GAP        = 5.0     # flat-rim distance from each B-corner along cap chord
-SCOOP_FRUSTUM_HEIGHT = 30.0    # distance (mm) from cap chord to parabola rim along axis_unit
+SCOOP_RIM_GAP = 5.0     # flat-rim distance from each B-corner along cap chord
 
 
 def _intersect_cap(p, axis, B0, cap_dir):
@@ -475,6 +474,31 @@ def _intersect_cap(p, axis, B0, cap_dir):
     rhs = B0 - p
     t_s = np.linalg.solve(A, rhs)
     return p + t_s[0] * axis
+
+
+def _solve_aim_chord_dir(aim_xz, anchor_pt, tR, cap_chord_dir):
+    """Solve rim chord direction so the dish axis (perpendicular to chord
+    through rim_center = anchor_pt + tR*chord_dir) passes EXACTLY through
+    aim_xz. Constraint: chord_dir . (aim - anchor) = tR. In 2D this gives
+    two unit-vector solutions; pick the one most aligned with cap_chord_dir
+    (so the off-cap rim endpoint lies on the far-cap-corner side).
+
+    Returns chord_dir (unit vector). Falls back to cap_chord_dir if aim is
+    too close to anchor (less than tR away).
+    """
+    v = aim_xz - anchor_pt
+    v_norm = float(np.linalg.norm(v))
+    if v_norm < tR + 1e-6:
+        return cap_chord_dir
+    cos_th = tR / v_norm
+    sin_th = float(np.sqrt(max(0.0, 1.0 - cos_th * cos_th)))
+    v_unit = v / v_norm
+    v_perp = np.array([-v_unit[1], v_unit[0]])
+    cd_a = cos_th * v_unit + sin_th * v_perp
+    cd_b = cos_th * v_unit - sin_th * v_perp
+    if float(np.dot(cd_a, cap_chord_dir)) >= float(np.dot(cd_b, cap_chord_dir)):
+        return cd_a
+    return cd_b
 
 
 def compute_scoop():
@@ -503,21 +527,7 @@ def compute_scoop():
     aim_xz = Dp_aim + diam_at_s(SCOOP_AIM_S_BASE) * perp_aim
 
     tR = float(SCOOP_RIM_RADIUS)
-    v = aim_xz - Pe1
-    v_norm = float(np.linalg.norm(v))
-    if v_norm < tR + 1e-6:
-        chord_dir = cap_chord_dir
-    else:
-        cos_th = tR / v_norm
-        sin_th = float(np.sqrt(max(0.0, 1.0 - cos_th * cos_th)))
-        v_unit = v / v_norm
-        v_perp = np.array([-v_unit[1], v_unit[0]])
-        cd_a = cos_th * v_unit + sin_th * v_perp
-        cd_b = cos_th * v_unit - sin_th * v_perp
-        if float(np.dot(cd_a, cap_chord_dir)) >= float(np.dot(cd_b, cap_chord_dir)):
-            chord_dir = cd_a
-        else:
-            chord_dir = cd_b
+    chord_dir = _solve_aim_chord_dir(aim_xz, Pe1, tR, cap_chord_dir)
 
     Pe2 = Pe1 + 2.0 * tR * chord_dir
     rim_center_3d = 0.5 * (Pe1 + Pe2)
@@ -564,21 +574,7 @@ def compute_scoop_treble():
     aim_xz = Dp_aim + diam_at_s(SCOOP_TREBLE_AIM_S) * perp_aim
 
     tR = float(SCOOP_TREBLE_RADIUS)
-    v = aim_xz - Pe3
-    v_norm = float(np.linalg.norm(v))
-    if v_norm < tR + 1e-6:
-        chord_dir = cap_chord_dir
-    else:
-        cos_th = tR / v_norm
-        sin_th = float(np.sqrt(max(0.0, 1.0 - cos_th * cos_th)))
-        v_unit = v / v_norm
-        v_perp = np.array([-v_unit[1], v_unit[0]])
-        cd_a = cos_th * v_unit + sin_th * v_perp
-        cd_b = cos_th * v_unit - sin_th * v_perp
-        if float(np.dot(cd_a, cap_chord_dir)) >= float(np.dot(cd_b, cap_chord_dir)):
-            chord_dir = cd_a
-        else:
-            chord_dir = cd_b
+    chord_dir = _solve_aim_chord_dir(aim_xz, Pe3, tR, cap_chord_dir)
 
     Pe4 = Pe3 + 2.0 * tR * chord_dir
     rim_center_3d = 0.5 * (Pe3 + Pe4)

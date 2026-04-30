@@ -412,3 +412,84 @@ clements47.py, build_views.py, edit_paths.svg, soundholes.csv,
 clements47_side.svg, clements47_top.svg, clements47_front.svg,
 clements47_rear.svg, clements47_sbf.svg, clements47_views.svg,
 HANDOFF.md (this file).
+
+---
+
+## Session 2026-04-29 (continued, autonomous): FreeCAD boolean cuts, refactor
+
+### FreeCAD scoop boolean cuts
+Implemented in `build_freecad.py`:
+- **`build_pedestal_solid(doc)`**: lofts a closed solid from the floor
+  limaçon at `PEDESTAL_FLOOR_Z` up to the chamber-bottom limaçon at S'b
+  through 16 intermediate stations.  Linear interpolation of D, perp,
+  diameter between the two endpoints.  Volume ~18.1 ML mm^3.
+- **`make_scoop_cut_volume(scoop, frustum_extension_mm=15)`**: returns
+  a single closed solid = paraboloid bowl (revolution of 30-pt parabola
+  profile in xz about axis_unit) FUSED with a cylinder (R, length 15 mm)
+  extending past the rim plane along axis_unit so the cut punches through.
+- **`make_scoop(doc, host_obj, scoop, label)`**: rewrites the host's
+  shape by `host_obj.Shape.cut(volume)` and adds a new Part::Feature
+  `<label>Scooped` (PedestalScooped, NeckScooped) so the original solid
+  stays inspectable.
+- **`build_neck()`**: spliced K5 (= N_KNOTS[6] = chamber back-wall apex
+  at S't = (730.39, 1622.08)) into the polyline between segs 2 and 3.
+  Without this splice, c.build_neck_segments() skips i=3 and i=4, so
+  the neck polygon's xmax was 660.42 mm and the entire treble scoop
+  volume sat outside the neck.  Splicing K5 puts the cap apex back in.
+- **`main()`** order: chamber -> floor_limacon -> column -> pedestal
+  -> bass scoop cut -> neck -> treble scoop cut -> strings.
+
+Verified cut volumes (mm^3):
+| Object           | Volume         |
+|------------------|----------------|
+| Pedestal         | 18,148,932.95  |
+| PedestalScooped  | 14,458,835.65  |
+| Neck             |  6,146,837.28  |
+| NeckScooped      |  6,112,626.47  |
+| (delta bass)     |  3,690,097     |
+| (delta treble)   |     34,211     |
+
+`clements47.FCStd` (937 KB) and both TechDraw SVGs (1.37 MB each)
+regenerated and copied to `Erand/`.
+
+### Script refactor (clements47.py)
+- Removed unused `SCOOP_FRUSTUM_HEIGHT = 30.0` constant (was set during
+  the abandoned tilted-rim experiment; never read after the asymmetric
+  frustum design landed).
+- Extracted `_solve_aim_chord_dir(aim_xz, anchor_pt, tR, cap_chord_dir)`
+  helper.  Both `compute_scoop()` and `compute_scoop_treble()` now call
+  it instead of duplicating ~12 lines of cos/sin chord-direction solver
+  each.  Output verified IDENTICAL to pre-refactor values (Pe2, R2, axis
+  for both scoops byte-equal).
+
+### Files changed in this autonomous batch
+- `clements47.py` (refactor)
+- `build_freecad.py` (boolean cuts)
+- `clements47.FCStd` (with PedestalScooped + NeckScooped)
+- `clements47_techdraw.svg`, `clements47_shoulder_techdraw.svg`
+- `clements47_*.svg` views (already current from earlier in session)
+- `Erand/clements47.FCStd`, `Erand/erand47_techdraw*.svg`
+
+### What the home-laptop claude-ai should know
+1. **FreeCAD model is now structurally correct** — pedestal and neck are
+   closed solids, bass and treble parabolic scoops are properly cut
+   into them.  The original Pedestal/Neck features are kept alongside
+   PedestalScooped/NeckScooped so you can A/B-compare in the FreeCAD GUI.
+2. **The treble scoop only removes 34 K mm^3** because the neck polygon
+   is narrow at S't (cap chord only 93 mm) and the rest of the dish
+   volume falls into solid-air outside the neck profile.  This is the
+   max material removable given the current treble parabola size
+   (R=38).  Increasing R further would violate the 5 mm rim constraint.
+3. **The neck polyline now includes K5 (= N6 = B2)** at (730.39, 1622.08).
+   This was a one-line splice in `build_neck()`, but it changes the neck
+   y-extruded prism's silhouette.  If you regenerate the neck, expect
+   a slightly larger neck polygon than before.
+4. `_solve_aim_chord_dir(aim, anchor, tR, cap_dir)` is the canonical
+   solver for putting Pe1=R1 (or Pe3=R3) on the cap chord with the dish
+   axis aimed at a target.  Use it for any future scoop variants.
+5. **Helmholtz acoustics**: chamber ~103 L, total hole area 46 cm^2,
+   multi-hole effective Leff gives f_H ~66 Hz (in traditional 60-90 Hz
+   sweet spot).  1st chamber axial mode at 106 Hz (closed-closed),
+   pressure node at chamber midpoint s=1000 -- now well clear of all
+   five soundholes after #3 was moved s=1078 -> s=1150.
+
