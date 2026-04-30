@@ -255,10 +255,30 @@ def build_column(doc):
 
 
 def build_neck(doc):
+    """Neck solid: K-knot polyline (xz) extruded by NECK_W_Y in y.
+
+    build_neck_segments() skips i=3 (K4->K5) and i=4 (K5->K6) because in the
+    canonical 2D drawing the K4-K5-K6 path is replaced by the chamber cap
+    (limaçon B-locus). For the 3D neck SOLID we need K5 = K_KNOTS[4] = N_KNOTS[6]
+    in the polyline so that the chamber-cap edge is part of the neck polygon
+    -- otherwise the treble scoop (whose cap chord runs B2=N_KNOTS[6] -> B3=
+    N_KNOTS[5] = K6) lies mostly OUTSIDE the neck polygon and the boolean cut
+    removes nothing. We splice K5 in between segs[2] (ending at K4) and segs[3]
+    (starting at K6).
+
+    Polyline -> Part.makePolygon -> Part.Face -> face.extrude. The result is a
+    closed prism solid suitable as the boolean-cut "minuend" for the treble
+    scoop.
+    """
     print(">>> Building neck (K-knot polyline extruded in y) ...")
     neck_segs = c.build_neck_segments()
+    K5 = c.K_KNOTS[4]  # = N_KNOTS[6] = (730.39, 1622.08); the chamber-cap apex
     poly_xz = []
-    for seg in neck_segs:
+    for seg_idx, seg in enumerate(neck_segs):
+        # Splice K5 between K3->K4 (seg index 2) and K6->K7 (seg index 3) so
+        # the neck polygon closes around the chamber cap chord.
+        if seg_idx == 3:
+            poly_xz.append((float(K5[0]), float(K5[1])))
         for t in np.linspace(0.0, 1.0, 30):
             P = c.bez(*seg, t)
             poly_xz.append((float(P[0]), float(P[1])))
@@ -274,6 +294,112 @@ def build_neck(doc):
     obj = doc.addObject("Part::Feature", "Neck")
     obj.Shape = prism
     return obj
+
+
+def build_pedestal_solid(doc):
+    """Solid CF pedestal: lofted between the floor limacon (at
+    PEDESTAL_FLOOR_Z) and the chamber-bottom limacon at S'b.
+
+    The bass-tail-front diameter is constant D_KNOT_FLOOR through this region,
+    so the cross-section is a uniform limacon whose D-point migrates from the
+    floor footprint up to the BTF curve at S'b. We linearly interpolate
+    D-point and perp_into across N_STATIONS for a smoothly lofted closed
+    solid; minimum acceptable would be just floor + S'b.
+    """
+    print(">>> Building pedestal solid (floor -> chamber-bottom limacon at S'b) ...")
+    S = c.compute_S_full()
+    SF = np.asarray(S["SF"], dtype=float)            # xz; SF[1] = 0
+    U3 = np.asarray(S["U3"], dtype=float)            # xz; U3[1] = 0
+    floor_z = float(c.PEDESTAL_FLOOR_Z)
+
+    # Floor station: D-point at SF translated to floor_z; perp_into points
+    # from SF toward U3 (+x).
+    D_floor = np.array([SF[0], floor_z], dtype=float)
+    diam_floor = float(np.linalg.norm(U3 - SF))
+    perp_floor = (U3 - SF) / diam_floor
+
+    # Top station: chamber-bottom limacon at S'b.
+    s_top = c._CHAMBER['s_at_Sprime_b']
+    D_top, perp_top = c.chamber_axis(s_top)
+    D_top = np.asarray(D_top, dtype=float)
+    perp_top = np.asarray(perp_top, dtype=float)
+    diam_top = float(c.diam_at_s(s_top))
+
+    N_STATIONS = 16
+    wires = []
+    for i in range(N_STATIONS):
+        u = i / float(N_STATIONS - 1)
+        D_i = (1.0 - u) * D_floor + u * D_top
+        perp_i = (1.0 - u) * perp_floor + u * perp_top
+        n = float(np.linalg.norm(perp_i))
+        if n > 1e-12:
+            perp_i = perp_i / n
+        diam_i = (1.0 - u) * diam_floor + u * diam_top
+        pts = _limacon_3d(D_i, perp_i, diam_i)
+        wires.append(_make_wire_from_pts(pts))
+
+    loft = Part.makeLoft(wires, True, True, False)
+    obj = doc.addObject("Part::Feature", "Pedestal")
+    obj.Shape = loft
+    return obj
+
+
+def make_scoop_cut_volume(scoop, frustum_extension_mm=15.0):
+    """Build the closed 3D solid to subtract for a parabolic scoop cut.
+
+    Two pieces fused into one solid:
+      a) Paraboloid bowl: revolve the half-profile (in xz, y=0) about
+         axis_unit. Profile traces vertex -> outward parabola to rim edge,
+         then closes along the axis.
+      b) Frustum extension: a cylinder of radius R, height
+         frustum_extension_mm, starting at rim_center and pointing along
+         axis_unit (INTO the chamber) so the cut punches through the cap.
+    """
+    rc_xz = np.asarray(scoop["rim_center_xz"], dtype=float)
+    axis_xz = np.asarray(scoop["axis_unit"], dtype=float)
+    chord_xz = np.asarray(scoop["rim_chord_dir"], dtype=float)
+    R = float(scoop["rim_radius"])
+    depth = float(scoop["depth"])
+    focal = float(scoop["paraboloid_focal"])
+
+    # Vertex sits depth*(-axis_unit) away from rim center in the xz plane.
+    vertex_xz = rc_xz - depth * axis_xz
+
+    # Half-profile in xz (y=0), from vertex outward to the rim edge in
+    # +chord_dir. Sample u in [0, R].
+    N = 30
+    profile_pts = []
+    for i in range(N):
+        u = R * i / float(N - 1)
+        # depth_at_u measured from vertex along +axis_unit
+        d = (u * u) / (4.0 * focal)
+        p = vertex_xz + d * axis_xz + u * chord_xz
+        profile_pts.append((float(p[0]), 0.0, float(p[1])))
+
+    # Rim edge sits at vertex + depth*axis_unit + R*chord_dir (= rim_center
+    # offset by R along chord). Close back to vertex along the axis.
+    rim_edge_at_axis = vertex_xz + depth * axis_xz   # = rc_xz
+    profile_pts.append((float(rim_edge_at_axis[0]), 0.0, float(rim_edge_at_axis[1])))
+    # Close back to first point (vertex).
+    profile_pts.append(profile_pts[0])
+
+    vecs = [Vec(*p) for p in profile_pts]
+    wire = Part.makePolygon(vecs)
+    face = Part.Face(wire)
+
+    # Revolution: axis goes through vertex in 3D, direction axis_xz lifted
+    # to (axis_x, 0, axis_z).
+    vertex_vec = Vec(vertex_xz[0], 0.0, vertex_xz[1])
+    axis_vec = Vec(axis_xz[0], 0.0, axis_xz[1])
+    bowl = face.revolve(vertex_vec, axis_vec, 360.0)
+
+    # Frustum extension cylinder: radius R, height frustum_extension_mm,
+    # starting at rim_center, direction axis_unit.
+    rc_vec = Vec(rc_xz[0], 0.0, rc_xz[1])
+    cyl = Part.makeCylinder(R, float(frustum_extension_mm), rc_vec, axis_vec)
+
+    fused = bowl.fuse(cyl)
+    return fused
 
 
 def build_strings(doc):
@@ -299,30 +425,19 @@ def build_strings(doc):
     return None
 
 
-def make_scoop(doc, scoop):
-    """Stub: place a marker for the future parabolic-scoop boolean cut.
+def make_scoop(doc, scoop, host_obj, label):
+    """Subtract the parabolic-scoop volume from `host_obj` and add a new
+    Part::Feature with the cut shape.
 
-    For now this just drops a thin Part::Sphere at the rim centre as a
-    visual placeholder. A future pass should:
-
-      1. Build a Part::Surface of revolution about scoop['axis_unit']
-         (passing through scoop['rim_center_xz'] in xz, full +/- y revolve)
-         using the parabola z = u**2 / (4 * scoop['paraboloid_focal']) for
-         u in [0, scoop['rim_radius']], where u is radial distance from
-         the axis and z is depth into the chamber along axis_unit.
-      2. Boolean-cut (Part::Cut) that surface (closed by a rim cap) out of
-         the Chamber loft to form the dish.
-
-    TODO: wire the boolean cut once the chamber loft is itself a single
-    closed solid. Focal length f = R^2 / (4 * depth) =
-    {scoop['paraboloid_focal']} mm with R = {scoop['rim_radius']} mm and
-    depth = {scoop['depth']} mm.
+    The original host_obj is preserved (as Pedestal / Neck) and the new
+    feature is added with `label` (e.g. PedestalScooped / NeckScooped) so
+    we can compare before/after.
     """
-    rc = scoop["rim_center_xz"]
-    # Place a small placeholder sphere at the rim center (xz; y=0).
-    sphere = Part.makeSphere(8.0, Vec(float(rc[0]), 0.0, float(rc[1])))
-    obj = doc.addObject("Part::Feature", "ScoopMarker")
-    obj.Shape = sphere
+    print(f">>> Cutting scoop volume from {host_obj.Label} -> {label} ...")
+    volume = make_scoop_cut_volume(scoop)
+    cut_shape = host_obj.Shape.cut(volume)
+    obj = doc.addObject("Part::Feature", label)
+    obj.Shape = cut_shape
     return obj
 
 
@@ -334,7 +449,10 @@ def main():
     build_chamber(doc)
     build_floor_limacon(doc)
     build_column(doc)
-    build_neck(doc)
+    pedestal = build_pedestal_solid(doc)
+    make_scoop(doc, c.compute_scoop(), pedestal, "PedestalScooped")
+    neck = build_neck(doc)
+    make_scoop(doc, c.compute_scoop_treble(), neck, "NeckScooped")
     build_strings(doc)
     doc.recompute()
     doc.saveAs(OUTPUT_FCSTD)

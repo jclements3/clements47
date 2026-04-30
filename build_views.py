@@ -813,7 +813,8 @@ def side_view_content(strings):
     except Exception:
         _neck_d_user = None
     neck_d_final = _neck_d_user if _neck_d_user else neck_d_kk
-    elems.append(f'<path d="{neck_d_final}" fill="none" '
+    elems.append(f'<path d="{neck_d_final}" fill="{PAL["neck"]}" '
+                 f'fill-opacity="0.18" '
                  f'stroke="{PAL["neck"]}" stroke-width="1.2"/>')
 
     # Parse neck path to recover the actual knot positions (so the N0..N9
@@ -1018,7 +1019,13 @@ def side_view_content(strings):
         zprime = r * r / (4.0 * fl)
         pt = vertex + zprime * au + r * chord_dir
         samples.append(pt)
-    void_d = "M " + " L ".join(f"{p[0]:.2f},{p[1]:.2f}" for p in samples) + " Z"
+    # Carved-out region in side view: R1 -> Pe1 (frustum wall) ->
+    # parabolic bowl Pe1->vertex->Pe2 -> Pe2 -> R2 (frustum wall) ->
+    # close to R1 along cap chord. The whole region (frustum + bowl) is
+    # removed material, drawn white-filled.
+    void_d = (f"M {r1_pt[0]:.2f},{r1_pt[1]:.2f} L {pe1_pt[0]:.2f},{pe1_pt[1]:.2f} "
+              + " L ".join(f"{p[0]:.2f},{p[1]:.2f}" for p in samples)
+              + f" L {r2_pt[0]:.2f},{r2_pt[1]:.2f} Z")
     elems.append(f'<path d="{void_d}" fill="#fff" stroke="#a000a0" '
                  f'stroke-width="1.0" opacity="1.0"/>')
     # Dish axis line: from rim_center ALONG axis_unit (the ACTUAL dish
@@ -1148,8 +1155,12 @@ def side_view_content(strings):
             # => closes back to R3/R4 at r=±tR (since zprime=tR^2/(4fl)=depth)
             pt = t_vertex + zprime * tau + r * chord_dir
             t_samples.append(pt)
-        t_void_d = ("M " + " L ".join(f"{p[0]:.2f},{p[1]:.2f}" for p in t_samples)
-                    + " Z")
+        # Carved-out treble region: R3 -> Pe3 (frustum) -> bowl Pe3->vertex
+        # ->Pe4 -> Pe4 -> R4 (frustum) -> close to R3 along cap chord.
+        t_void_d = (f"M {r3_pt[0]:.2f},{r3_pt[1]:.2f} "
+                    f"L {pe3_pt[0]:.2f},{pe3_pt[1]:.2f} "
+                    + " L ".join(f"{p[0]:.2f},{p[1]:.2f}" for p in t_samples)
+                    + f" L {r4_pt[0]:.2f},{r4_pt[1]:.2f} Z")
         elems.append(f'<path d="{t_void_d}" fill="#fff" stroke="#a000a0" '
                      f'stroke-width="1.0" opacity="1.0"/>')
         # Dish axis line: from PARABOLA VERTEX (origin) ALONG axis_into
@@ -1279,7 +1290,7 @@ def side_view_content(strings):
         ez = nz + PIN_LEN * pz
         # Light-green clearance buffer at the pin tip (lever pivot).
         elems.append(f'<circle cx="{ex:.2f}" cy="{ez:.2f}" '
-                     f'r="{c.CLEARANCE:.1f}" fill="#e0a020" fill-opacity="0.13"/>')
+                     f'r="{c.CLEARANCE:.1f}" fill="#e0a020" fill-opacity="0.30"/>')
         elems.append(f'<line x1="{nx:.2f}" y1="{nz:.2f}" '
                      f'x2="{ex:.2f}" y2="{ez:.2f}" '
                      f'stroke="#444" stroke-width="0.6" '
@@ -1291,11 +1302,11 @@ def side_view_content(strings):
     #   Nf_sharp  blue   #1060d0
     for s in strings:
         elems.append(f'<circle cx="{s["Nf_flat"][0]:.2f}" cy="{s["Nf_flat"][2]:.2f}" '
-                     f'r="{c.CLEARANCE:.1f}" fill="#c00000" fill-opacity="0.13"/>')
+                     f'r="{c.CLEARANCE:.1f}" fill="#c00000" fill-opacity="0.30"/>')
         elems.append(f'<circle cx="{s["Nf_nat"][0]:.2f}" cy="{s["Nf_nat"][2]:.2f}" '
-                     f'r="{c.CLEARANCE:.1f}" fill="#2ca02c" fill-opacity="0.13"/>')
+                     f'r="{c.CLEARANCE:.1f}" fill="#2ca02c" fill-opacity="0.30"/>')
         elems.append(f'<circle cx="{s["Nf_sharp"][0]:.2f}" cy="{s["Nf_sharp"][2]:.2f}" '
-                     f'r="{c.CLEARANCE:.1f}" fill="#1060d0" fill-opacity="0.13"/>')
+                     f'r="{c.CLEARANCE:.1f}" fill="#1060d0" fill-opacity="0.30"/>')
 
     # Outer buffer envelope. PRIMARY SOURCE: hand-drawn path in
     # buffer.svg (canonical, edited in Inkscape). If buffer.svg is missing
