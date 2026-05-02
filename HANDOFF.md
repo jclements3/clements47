@@ -616,3 +616,61 @@ adb shell am start -n com.harp.erandapp/.MainActivity
 label and gradle task name were renamed.  Keeping the package id
 avoids forcing a clean install / data wipe on the tablet.)
 
+---
+
+## Session 2026-05-01/02 (home-laptop -> lab): re-sync FreeCAD artifacts
+
+### What changed
+Commit 09c43b0 ("Fix buffer envelope path z-shift; resize scoops...")
+regenerated views + FCStd + shoulder techdraw but missed the main
+`clements47_techdraw.svg`, leaving it one commit behind.  Rebuilt all
+FreeCAD-derived artifacts so they match current `clements47.py`:
+
+- `python3 build_views.py` -> 5 views + composite (byte-identical to
+  what was committed; build is deterministic and source was current).
+- `freecadcmd build_freecad.py` -> `clements47.FCStd` (16 source
+  objects: Chamber, FloorLimacon, Column, Neck, Strings, Pedestal,
+  PedestalScooped, NeckScooped, PedestalShell, NeckShell, SoundboxShell,
+  Tenon_PedestalSoundbox, Tenon_SoundboxNeck, Tenon_ColumnPedestal,
+  Tenon_ColumnNeck, HelicoilPockets).
+- `freecadcmd build_techdraw.py` -> `clements47_techdraw.svg`
+  (4,137,446 B) and `clements47_shoulder_techdraw.svg` (4,136,631 B).
+  Took ~30 min wall time (HLR is slow on this assembly).
+
+### Warning to investigate (lab claude-ai)
+During shoulder-detail build:
+```
+DVP - V_sh_right - failed to create projection CS
+```
+The shoulder SVG still wrote successfully, so other views are intact,
+but the right-side shoulder view direction may be missing/empty.  Open
+`clements47_shoulder_techdraw.svg` and verify all expected views are
+present.  If V_sh_right is blank, check that view's projection vector
+in `build_techdraw.py` against the FCStd's current bounding box (the
+scoop resize / z-lift in 09c43b0 may have moved geometry past the
+projection's clipping plane).
+
+### Workspace notes
+- WSL2 box (`/home/clementsj/projects/clements47`).  FreeCAD lives in
+  `./squashfs-root/usr/bin/freecadcmd` (extracted AppImage); not on
+  PATH.  Use that path explicitly in build commands.
+- HTTP server for SVG preview: `python3 -m http.server 8002` (ports
+  8000 and 8001 are held by an unrelated HarpHymnal project on this
+  box).  http://localhost:8002/ -> index.html 5-panel layout.
+- Untracked cruft from the old (deleted) Erard project still in
+  the working tree: `*.FCBak`, `squashfs-root/`, `images/`,
+  `soundbox.stl`, `string_analysis_spreadsheet.{odt,xls}`,
+  `sbm-light-worksheet.xls`, `HSAInstructions.pdf`,
+  `FreeCAD_1.1.0-Linux-x86_64-py311.AppImage`, `erard template...`.
+  Not in `.gitignore`; safe to delete or .gitignore-extend whenever.
+- `CLAUDE.md` is stale -- still describes the deleted Erard/limacon
+  mechanism project (1015-object FCStd, `add_mechanism.py`, etc.).
+  None of those files exist in the new tree.  Worth rewriting next
+  session to match the current `clements47.py` pipeline.
+
+### Files changed this session
+- `clements47.FCStd` (regenerated)
+- `clements47_techdraw.svg` (regenerated)
+- `clements47_shoulder_techdraw.svg` (regenerated)
+- `HANDOFF.md` (this entry)
+
